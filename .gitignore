@@ -142,6 +142,8 @@ cache/
 tmp/
 temp/
 
+*.db
+*.sqlite
 *.npy
 *.npz
 *.pkl
@@ -183,3 +185,4 @@ tools/wiki-site/app/public/*.db
 .codex/
 .claude/
 pencil/
+CLAUDE.md
