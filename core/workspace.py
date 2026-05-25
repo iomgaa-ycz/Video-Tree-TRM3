@@ -7,6 +7,7 @@ Workspace 通过 manifest.json 引用 Store 中特定版本并记录实验过程
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 from dataclasses import dataclass
@@ -191,3 +192,175 @@ def advance_version(
         description=meta.get("description", ""),
     )
     return version
+
+
+# ---------------------------------------------------------------------------
+# Workspace 函数
+# ---------------------------------------------------------------------------
+
+_MANIFEST_CURRENT_KEYS = {"videos", "questions", "skills", "prompts"}
+
+
+def init_workspace(
+    workspace_dir: Path,
+    store_dir: Path,
+    questions: str,
+    skills_version: str,
+    prompts_version: str,
+) -> None:
+    """创建 Workspace 目录并写入初始 manifest.json。
+
+    参数:
+        workspace_dir: Workspace 目标路径（不得已存在）。
+        store_dir: Store 根目录。
+        questions: 题目在 questions/ 下的相对路径，如 "benchmarks/Video-MME"。
+        skills_version: Skills 版本号，如 "v1"。
+        prompts_version: Prompts 版本号，如 "v1"。
+
+    异常:
+        FileExistsError: Workspace 目录已存在。
+        FileNotFoundError: 引用的资源在 Store 中不存在。
+    """
+    if workspace_dir.exists():
+        raise FileExistsError(f"Workspace 已存在: {workspace_dir}")
+    store_abs = store_dir.resolve()
+    refs = {
+        "skills": f"skills/{skills_version}",
+        "prompts": f"prompts/{prompts_version}",
+        "questions": f"questions/{questions}",
+    }
+    for label, rel in refs.items():
+        full = store_abs / rel
+        if not full.is_dir():
+            raise FileNotFoundError(f"Store 中不存在 {label}: {full}")
+
+    workspace_dir.mkdir(parents=True)
+    (workspace_dir / "analyses").mkdir()
+    (workspace_dir / "runs").mkdir()
+    store_rel = os.path.relpath(store_abs, workspace_dir.resolve())
+    manifest = {
+        "name": workspace_dir.name,
+        "created_at": _now_iso(),
+        "store": store_rel,
+        "current": {
+            "videos": "videos",
+            "questions": refs["questions"],
+            "skills": refs["skills"],
+            "prompts": refs["prompts"],
+        },
+        "history": [],
+    }
+    (workspace_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2)
+    )
+
+
+def load_manifest(workspace_dir: Path) -> dict:
+    """读取并返回 workspace 的 manifest.json。
+
+    参数:
+        workspace_dir: Workspace 根目录。
+
+    返回:
+        manifest 字典。
+
+    异常:
+        FileNotFoundError: manifest.json 不存在。
+    """
+    manifest_path = workspace_dir / "manifest.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"manifest.json 不存在: {manifest_path}")
+    return json.loads(manifest_path.read_text())
+
+
+def resolve_paths(workspace_dir: Path) -> ResolvedPaths:
+    """读取 manifest，解析 current 中所有资源的绝对路径。
+
+    参数:
+        workspace_dir: Workspace 根目录。
+
+    返回:
+        ResolvedPaths 实例，包含所有资源的绝对路径。
+    """
+    manifest = load_manifest(workspace_dir)
+    ws_abs = workspace_dir.resolve()
+    store_abs = (ws_abs / manifest["store"]).resolve()
+    current = manifest["current"]
+    return ResolvedPaths(
+        store_dir=store_abs,
+        videos_dir=store_abs / current["videos"],
+        questions_dir=store_abs / current["questions"],
+        skills_dir=store_abs / current["skills"],
+        prompts_dir=store_abs / current["prompts"],
+        workspace_dir=ws_abs,
+        db_path=ws_abs / "harness.db",
+        analyses_dir=ws_abs / "analyses",
+        runs_dir=ws_abs / "runs",
+    )
+
+
+def list_video_ids(workspace_dir: Path) -> list[str]:
+    """列出 workspace 引用的所有视频 ID（含 tree.json 的子目录名）。
+
+    参数:
+        workspace_dir: Workspace 根目录。
+
+    返回:
+        排序后的视频 ID 列表。
+    """
+    paths = resolve_paths(workspace_dir)
+    video_ids = []
+    for entry in paths.videos_dir.iterdir():
+        if entry.is_dir() and (entry / "tree.json").exists():
+            video_ids.append(entry.name)
+    return sorted(video_ids)
+
+
+def update_manifest(workspace_dir: Path, **version_updates: str) -> None:
+    """更新 manifest 的 current 字段。
+
+    参数:
+        workspace_dir: Workspace 根目录。
+        **version_updates: 要更新的字段及其新值，如 skills="skills/v2"。
+
+    异常:
+        KeyError: 更新的字段不在 current 允许的 key 中。
+    """
+    invalid = set(version_updates) - _MANIFEST_CURRENT_KEYS
+    if invalid:
+        raise KeyError(f"无效的 manifest current 字段: {invalid}")
+    manifest = load_manifest(workspace_dir)
+    manifest["current"].update(version_updates)
+    (workspace_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2)
+    )
+
+
+def record_run(workspace_dir: Path, run_id: str) -> Path:
+    """将 current 版本快照追加到 manifest history，创建 run 目录和 per-video wiki 目录。
+
+    参数:
+        workspace_dir: Workspace 根目录。
+        run_id: 本次运行的唯一标识，如 "run_001"。
+
+    返回:
+        创建的 run 目录路径。
+    """
+    manifest = load_manifest(workspace_dir)
+    current = manifest["current"]
+    entry = {
+        "run_id": run_id,
+        "started_at": _now_iso(),
+        "skills": current["skills"],
+        "prompts": current["prompts"],
+        "questions": current["questions"],
+    }
+    manifest["history"].append(entry)
+    (workspace_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2)
+    )
+    run_dir = workspace_dir / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    for video_id in list_video_ids(workspace_dir):
+        (run_dir / video_id / "wiki").mkdir(parents=True)
+    return run_dir

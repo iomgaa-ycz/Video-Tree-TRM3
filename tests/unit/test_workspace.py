@@ -12,8 +12,14 @@ from core.workspace import (
     ResolvedPaths,
     advance_version,
     init_store,
+    init_workspace,
     list_versions,
+    list_video_ids,
+    load_manifest,
     next_version,
+    record_run,
+    resolve_paths,
+    update_manifest,
 )
 
 
@@ -207,3 +213,233 @@ class TestAdvanceVersion:
         assert (
             store / "questions" / "generated" / "v2" / "video_001.json"
         ).exists()
+
+
+# ---------------------------------------------------------------------------
+# Workspace 函数测试
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def ready_store(tmp_path: Path, seed_dirs: dict[str, Path]) -> Path:
+    """返回已初始化的 store 路径。"""
+    store = tmp_path / "store"
+    init_store(store, seed_dirs["videos"], seed_dirs["skills"], seed_dirs["prompts"])
+    (store / "questions" / "benchmarks" / "Video-MME").mkdir(parents=True)
+    (store / "questions" / "benchmarks" / "Video-MME" / "video_001.json").write_text(
+        "[]"
+    )
+    return store
+
+
+class TestInitWorkspace:
+    """创建 workspace 并写入 manifest。"""
+
+    def test_creates_workspace_structure(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        assert (ws / "manifest.json").exists()
+        assert (ws / "analyses").is_dir()
+        assert (ws / "runs").is_dir()
+
+    def test_manifest_content(self, tmp_path: Path, ready_store: Path) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        manifest = json.loads((ws / "manifest.json").read_text())
+        assert manifest["name"] == "exp1"
+        assert manifest["current"]["videos"] == "videos"
+        assert manifest["current"]["questions"] == "questions/benchmarks/Video-MME"
+        assert manifest["current"]["skills"] == "skills/v1"
+        assert manifest["current"]["prompts"] == "prompts/v1"
+        assert manifest["history"] == []
+        assert "store" in manifest
+        assert "created_at" in manifest
+
+    def test_raises_if_workspace_exists(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        ws.mkdir(parents=True)
+        with pytest.raises(FileExistsError):
+            init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+    def test_raises_if_skills_version_missing(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        with pytest.raises(FileNotFoundError):
+            init_workspace(ws, ready_store, "benchmarks/Video-MME", "v99", "v1")
+
+    def test_raises_if_questions_missing(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        with pytest.raises(FileNotFoundError):
+            init_workspace(ws, ready_store, "benchmarks/NONEXISTENT", "v1", "v1")
+
+
+class TestLoadManifest:
+    """读取 manifest.json。"""
+
+    def test_loads_manifest(self, tmp_path: Path, ready_store: Path) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        manifest = load_manifest(ws)
+        assert manifest["name"] == "exp1"
+        assert manifest["current"]["skills"] == "skills/v1"
+
+    def test_raises_if_no_manifest(self, tmp_path: Path) -> None:
+        ws = tmp_path / "workspaces" / "no_such"
+        ws.mkdir(parents=True)
+        with pytest.raises(FileNotFoundError):
+            load_manifest(ws)
+
+
+class TestResolvePaths:
+    """从 manifest 解析绝对路径。"""
+
+    def test_resolves_all_paths(self, tmp_path: Path, ready_store: Path) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        paths = resolve_paths(ws)
+        assert paths.store_dir == ready_store.resolve()
+        assert paths.videos_dir == ready_store.resolve() / "videos"
+        assert (
+            paths.questions_dir
+            == ready_store.resolve() / "questions" / "benchmarks" / "Video-MME"
+        )
+        assert paths.skills_dir == ready_store.resolve() / "skills" / "v1"
+        assert paths.prompts_dir == ready_store.resolve() / "prompts" / "v1"
+        assert paths.workspace_dir == ws.resolve()
+        assert paths.db_path == ws.resolve() / "harness.db"
+        assert paths.analyses_dir == ws.resolve() / "analyses"
+        assert paths.runs_dir == ws.resolve() / "runs"
+
+    def test_returns_resolved_paths_type(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        paths = resolve_paths(ws)
+        assert isinstance(paths, ResolvedPaths)
+
+
+class TestListVideoIds:
+    """列出 workspace 引用的视频 ID。"""
+
+    def test_lists_videos_with_tree_json(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        video_ids = list_video_ids(ws)
+        assert video_ids == ["video_001", "video_002"]
+
+    def test_ignores_dirs_without_tree_json(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        (ready_store / "videos" / "no_tree_dir").mkdir()
+
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        video_ids = list_video_ids(ws)
+        assert "no_tree_dir" not in video_ids
+
+
+class TestUpdateManifest:
+    """更新 manifest 的 current 字段。"""
+
+    def test_updates_skills_version(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+        (ready_store / "skills" / "v2").mkdir()
+
+        update_manifest(ws, skills="skills/v2")
+
+        manifest = load_manifest(ws)
+        assert manifest["current"]["skills"] == "skills/v2"
+        assert manifest["current"]["prompts"] == "prompts/v1"
+
+    def test_updates_multiple_fields(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+        (ready_store / "skills" / "v2").mkdir()
+        (ready_store / "prompts" / "v2").mkdir()
+
+        update_manifest(ws, skills="skills/v2", prompts="prompts/v2")
+
+        manifest = load_manifest(ws)
+        assert manifest["current"]["skills"] == "skills/v2"
+        assert manifest["current"]["prompts"] == "prompts/v2"
+
+    def test_rejects_invalid_key(self, tmp_path: Path, ready_store: Path) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        with pytest.raises(KeyError):
+            update_manifest(ws, nonexistent_field="value")
+
+
+class TestRecordRun:
+    """将 current 版本快照追加到 history，创建 run 目录。"""
+
+    def test_appends_to_history(self, tmp_path: Path, ready_store: Path) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        record_run(ws, "run_001")
+
+        manifest = load_manifest(ws)
+        assert len(manifest["history"]) == 1
+        entry = manifest["history"][0]
+        assert entry["run_id"] == "run_001"
+        assert entry["skills"] == "skills/v1"
+        assert entry["prompts"] == "prompts/v1"
+        assert entry["questions"] == "questions/benchmarks/Video-MME"
+        assert "started_at" in entry
+
+    def test_creates_run_directory(self, tmp_path: Path, ready_store: Path) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        run_dir = record_run(ws, "run_001")
+        assert run_dir.is_dir()
+        assert run_dir.name == "run_001"
+
+    def test_creates_per_video_wiki_dirs(
+        self, tmp_path: Path, ready_store: Path
+    ) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        run_dir = record_run(ws, "run_001")
+        assert (run_dir / "video_001" / "wiki").is_dir()
+        assert (run_dir / "video_002" / "wiki").is_dir()
+
+    def test_multiple_runs_append(self, tmp_path: Path, ready_store: Path) -> None:
+        ws = tmp_path / "workspaces" / "exp1"
+        init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
+
+        record_run(ws, "run_001")
+
+        (ready_store / "skills" / "v2").mkdir()
+        update_manifest(ws, skills="skills/v2")
+        record_run(ws, "run_002")
+
+        manifest = load_manifest(ws)
+        assert len(manifest["history"]) == 2
+        assert manifest["history"][0]["skills"] == "skills/v1"
+        assert manifest["history"][1]["skills"] == "skills/v2"
