@@ -2,36 +2,12 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from httpx import Timeout
-from loguru import logger
-from openai import APIConnectionError, APITimeoutError, OpenAI, RateLimitError
-from tenacity import (
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
-
-_UNUSED_IMPORTS = (
-    os,
-    Timeout,
-    logger,
-    APIConnectionError,
-    APITimeoutError,
-    OpenAI,
-    RateLimitError,
-    retry,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 
 def detect_provider(base_url: str) -> str:
