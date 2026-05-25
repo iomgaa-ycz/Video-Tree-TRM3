@@ -66,7 +66,10 @@ class HarnessLog:
                 started_at TEXT,
                 finished_at TEXT,
                 config JSON,
-                status TEXT DEFAULT 'running'
+                status TEXT DEFAULT 'running',
+                skills_version TEXT,
+                prompts_version TEXT,
+                questions_ref TEXT
             )
         """)
         self._conn.execute("""

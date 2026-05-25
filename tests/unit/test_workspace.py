@@ -443,3 +443,38 @@ class TestRecordRun:
         assert len(manifest["history"]) == 2
         assert manifest["history"][0]["skills"] == "skills/v1"
         assert manifest["history"][1]["skills"] == "skills/v2"
+
+
+# ---------------------------------------------------------------------------
+# HarnessLog 扩展测试
+# ---------------------------------------------------------------------------
+
+from core.harness.log import HarnessLog
+
+
+class TestHarnessLogVersionColumns:
+    """验证 _runs 表包含版本追踪列。"""
+
+    def test_runs_table_has_version_columns(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "harness.db"
+        with HarnessLog(str(db_path), "test_run") as log:
+            columns = log.query("PRAGMA table_info(_runs)")
+        col_names = {c["name"] for c in columns}
+        assert "skills_version" in col_names
+        assert "prompts_version" in col_names
+        assert "questions_ref" in col_names
+
+    def test_insert_run_with_version_info(self, tmp_path: Path) -> None:
+        db_path = tmp_path / "harness.db"
+        with HarnessLog(str(db_path), "run_001") as log:
+            log.execute(
+                "UPDATE _runs SET skills_version=?, prompts_version=?, questions_ref=? WHERE run_id=?",
+                ("v2", "v1", "benchmarks/Video-MME", "run_001"),
+            )
+            rows = log.query(
+                "SELECT skills_version, prompts_version, questions_ref FROM _runs WHERE run_id=?",
+                ("run_001",),
+            )
+        assert rows[0]["skills_version"] == "v2"
+        assert rows[0]["prompts_version"] == "v1"
+        assert rows[0]["questions_ref"] == "benchmarks/Video-MME"
