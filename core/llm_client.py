@@ -1,4 +1,4 @@
-"""LLM 客户端 — OpenAI 兼容，内置 thinking 适配与重试。"""
+"""LLM 客户端 — OpenAI 兼容，内置 thinking 适配。"""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+# 模块级加载 .env，确保 from_env() 工厂方法可直接读取环境变量
 load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 
 
