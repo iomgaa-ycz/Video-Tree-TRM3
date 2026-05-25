@@ -1,0 +1,8 @@
+project_name: "Research Wiki"
+primary_color: "#4c6ef5"
+port: 8686
+model: "claude-opus-4-6"
+temperature: 0
+debounce_seconds: 2
+auto_shutdown_minutes: 30
+max_retries_on_compile_error: 1
