@@ -1,0 +1,90 @@
+{
+  "videoID": "test_001",
+  "duration_category": "short",
+  "duration_seconds": 120.0,
+  "domain": "test",
+  "nodes": {
+    "test_001_L1_000": {
+      "level": 1,
+      "time_range": [0.0, 60.0],
+      "card": {
+        "scene_summary": "第一个场景：两人在公园散步",
+        "key_entities": ["人物A", "人物B"]
+      },
+      "subtitle": "今天天气很好",
+      "children_ids": ["test_001_L2_000", "test_001_L2_001"]
+    },
+    "test_001_L1_001": {
+      "level": 1,
+      "time_range": [60.0, 120.0],
+      "card": {
+        "scene_summary": "第二个场景：餐厅用餐"
+      },
+      "subtitle": "",
+      "children_ids": ["test_001_L2_002"]
+    },
+    "test_001_L2_000": {
+      "level": 2,
+      "time_range": [0.0, 30.0],
+      "card": {
+        "event_description": "人物A和B走在公园小路上"
+      },
+      "subtitle": "你看那边的花",
+      "children_ids": ["test_001_L3_000", "test_001_L3_001"]
+    },
+    "test_001_L2_001": {
+      "level": 2,
+      "time_range": [30.0, 60.0],
+      "card": {
+        "event_description": "两人在长椅上休息"
+      },
+      "subtitle": "坐下来歇歇吧",
+      "children_ids": ["test_001_L3_002"]
+    },
+    "test_001_L2_002": {
+      "level": 2,
+      "time_range": [60.0, 120.0],
+      "card": {
+        "event_description": "两人进入餐厅点餐"
+      },
+      "subtitle": "来一份牛排",
+      "children_ids": ["test_001_L3_003"]
+    },
+    "test_001_L3_000": {
+      "level": 3,
+      "time_range": [0.0, 15.0],
+      "card": {
+        "frame_summary": "公园入口，阳光明媚"
+      },
+      "subtitle": "",
+      "children_ids": []
+    },
+    "test_001_L3_001": {
+      "level": 3,
+      "time_range": [15.0, 30.0],
+      "card": {
+        "frame_summary": "花丛旁边，人物A指向远处"
+      },
+      "subtitle": "你看那边的花",
+      "children_ids": []
+    },
+    "test_001_L3_002": {
+      "level": 3,
+      "time_range": [30.0, 60.0],
+      "card": {
+        "frame_summary": "长椅上两人并排坐着"
+      },
+      "subtitle": "",
+      "children_ids": []
+    },
+    "test_001_L3_003": {
+      "level": 3,
+      "time_range": [60.0, 120.0],
+      "card": {
+        "frame_summary": "餐厅内部，菜单摆在桌上"
+      },
+      "subtitle": "来一份牛排",
+      "children_ids": []
+    }
+  }
+}
