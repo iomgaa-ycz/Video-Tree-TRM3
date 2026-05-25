@@ -1,4 +1,5 @@
 """HarnessLog：SQLite 薄包装，提供灵活的结构化日志能力。"""
+
 from __future__ import annotations
 
 import json
@@ -14,7 +15,9 @@ def _get_git_sha() -> str | None:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         )
         return result.stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -50,7 +53,9 @@ class HarnessLog:
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._init_fixed_tables()
         resolved_sha = git_sha or _get_git_sha()
-        config_json = json.dumps(config_snapshot, ensure_ascii=False) if config_snapshot else None
+        config_json = (
+            json.dumps(config_snapshot, ensure_ascii=False) if config_snapshot else None
+        )
         self._conn.execute(
             "INSERT OR IGNORE INTO _runs (run_id, git_sha, started_at, config, status) VALUES (?, ?, ?, ?, ?)",
             (run_id, resolved_sha, _now_iso(), config_json, "running"),
@@ -121,13 +126,17 @@ class HarnessLog:
         col_names = ", ".join(cols)
         values = [enriched[c] for c in cols]
         if mode == "upsert":
-            sql = f"INSERT OR REPLACE INTO {table} ({col_names}) VALUES ({placeholders})"
+            sql = (
+                f"INSERT OR REPLACE INTO {table} ({col_names}) VALUES ({placeholders})"
+            )
         else:
             sql = f"INSERT INTO {table} ({col_names}) VALUES ({placeholders})"
         self._conn.execute(sql, values)
         self._conn.commit()
 
-    def insert_many(self, table: str, records: list[dict[str, Any]], mode: str = "append") -> None:
+    def insert_many(
+        self, table: str, records: list[dict[str, Any]], mode: str = "append"
+    ) -> None:
         """批量插入多条记录。
 
         参数:
@@ -171,7 +180,12 @@ class HarnessLog:
         """
         self._conn.execute(
             "INSERT INTO _events (run_id, timestamp, event_type, payload) VALUES (?, ?, ?, ?)",
-            (self._run_id, _now_iso(), event_type, json.dumps(payload, ensure_ascii=False)),
+            (
+                self._run_id,
+                _now_iso(),
+                event_type,
+                json.dumps(payload, ensure_ascii=False),
+            ),
         )
         self._conn.commit()
 
@@ -201,11 +215,16 @@ class HarnessLog:
             table_name = table_row["name"]
             subprocess.run(
                 [
-                    "python3", ".claude/tools/research_wiki.py",
-                    "add_entity", wiki_dir,
-                    "--type", "schema",
-                    "--id", table_name,
-                    "--title", f"表结构: {table_name}",
+                    "python3",
+                    ".claude/tools/research_wiki.py",
+                    "add_entity",
+                    wiki_dir,
+                    "--type",
+                    "schema",
+                    "--id",
+                    table_name,
+                    "--title",
+                    f"表结构: {table_name}",
                 ],
                 check=True,
             )

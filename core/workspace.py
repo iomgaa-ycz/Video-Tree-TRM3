@@ -152,12 +152,16 @@ def init_store(
     (store_dir / "questions" / "generated").mkdir(parents=True)
     shutil.copytree(skills_dir, store_dir / "skills" / "v1")
     _write_meta(
-        store_dir / "skills" / "v1", "v1", "manual",
+        store_dir / "skills" / "v1",
+        "v1",
+        "manual",
         description="手工创建的初始版本",
     )
     shutil.copytree(prompts_dir, store_dir / "prompts" / "v1")
     _write_meta(
-        store_dir / "prompts" / "v1", "v1", "manual",
+        store_dir / "prompts" / "v1",
+        "v1",
+        "manual",
         description="手工创建的初始版本",
     )
 

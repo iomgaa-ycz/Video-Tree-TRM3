@@ -8,6 +8,7 @@ import pytest
 
 import json
 
+from core.harness.log import HarnessLog
 from core.workspace import (
     ResolvedPaths,
     advance_version,
@@ -108,7 +109,9 @@ class TestInitStore:
         self, tmp_path: Path, seed_dirs: dict[str, Path]
     ) -> None:
         store = tmp_path / "store"
-        init_store(store, seed_dirs["videos"], seed_dirs["skills"], seed_dirs["prompts"])
+        init_store(
+            store, seed_dirs["videos"], seed_dirs["skills"], seed_dirs["prompts"]
+        )
 
         assert (store / "videos" / "video_001" / "tree.json").exists()
         assert (store / "videos" / "video_002" / "tree.json").exists()
@@ -117,11 +120,11 @@ class TestInitStore:
         assert (store / "skills" / "v1" / "search_strategy.md").exists()
         assert (store / "prompts" / "v1" / "react_system.md").exists()
 
-    def test_writes_meta_json(
-        self, tmp_path: Path, seed_dirs: dict[str, Path]
-    ) -> None:
+    def test_writes_meta_json(self, tmp_path: Path, seed_dirs: dict[str, Path]) -> None:
         store = tmp_path / "store"
-        init_store(store, seed_dirs["videos"], seed_dirs["skills"], seed_dirs["prompts"])
+        init_store(
+            store, seed_dirs["videos"], seed_dirs["skills"], seed_dirs["prompts"]
+        )
 
         skills_meta = json.loads((store / "skills" / "v1" / "meta.json").read_text())
         assert skills_meta["version"] == "v1"
@@ -177,9 +180,7 @@ class TestAdvanceVersion:
         meta = {"parent": "v1", "source": "evolution"}
         advance_version(store, "skills", evolved, meta)
 
-        written_meta = json.loads(
-            (store / "skills" / "v2" / "meta.json").read_text()
-        )
+        written_meta = json.loads((store / "skills" / "v2" / "meta.json").read_text())
         assert written_meta["version"] == "v2"
         assert written_meta["parent"] == "v1"
         assert written_meta["source"] == "evolution"
@@ -210,9 +211,7 @@ class TestAdvanceVersion:
             store, "questions/generated", new_questions, {"source": "auto-gen"}
         )
         assert version == "v2"
-        assert (
-            store / "questions" / "generated" / "v2" / "video_001.json"
-        ).exists()
+        assert (store / "questions" / "generated" / "v2" / "video_001.json").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -358,9 +357,7 @@ class TestListVideoIds:
 class TestUpdateManifest:
     """更新 manifest 的 current 字段。"""
 
-    def test_updates_skills_version(
-        self, tmp_path: Path, ready_store: Path
-    ) -> None:
+    def test_updates_skills_version(self, tmp_path: Path, ready_store: Path) -> None:
         ws = tmp_path / "workspaces" / "exp1"
         init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
         (ready_store / "skills" / "v2").mkdir()
@@ -371,9 +368,7 @@ class TestUpdateManifest:
         assert manifest["current"]["skills"] == "skills/v2"
         assert manifest["current"]["prompts"] == "prompts/v1"
 
-    def test_updates_multiple_fields(
-        self, tmp_path: Path, ready_store: Path
-    ) -> None:
+    def test_updates_multiple_fields(self, tmp_path: Path, ready_store: Path) -> None:
         ws = tmp_path / "workspaces" / "exp1"
         init_workspace(ws, ready_store, "benchmarks/Video-MME", "v1", "v1")
         (ready_store / "skills" / "v2").mkdir()
@@ -448,8 +443,6 @@ class TestRecordRun:
 # ---------------------------------------------------------------------------
 # HarnessLog 扩展测试
 # ---------------------------------------------------------------------------
-
-from core.harness.log import HarnessLog
 
 
 class TestHarnessLogVersionColumns:
