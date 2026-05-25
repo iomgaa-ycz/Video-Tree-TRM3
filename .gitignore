@@ -186,3 +186,4 @@ tools/wiki-site/app/public/*.db
 .claude/
 pencil/
 CLAUDE.md
+store/
