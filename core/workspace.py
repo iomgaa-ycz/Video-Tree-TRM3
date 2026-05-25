@@ -6,8 +6,11 @@ Workspace 通过 manifest.json 引用 Store 中特定版本并记录实验过程
 
 from __future__ import annotations
 
+import json
 import re
+import shutil
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -91,3 +94,100 @@ def next_version(store_dir: Path, resource_type: str) -> str:
         return "v1"
     latest = _parse_version(versions[-1])
     return f"v{latest + 1}"
+
+
+def _now_iso() -> str:
+    """返回当前 UTC 时间的 ISO 格式字符串。"""
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _write_meta(
+    target_dir: Path, version: str, source: str, **extra: str | None
+) -> None:
+    """写入版本元数据文件。
+
+    参数:
+        target_dir: 版本目录。
+        version: 版本号。
+        source: 来源标识（"manual" / "evolution" / "auto-gen"）。
+        **extra: 额外字段（parent, trigger_run, trigger_workspace, description）。
+    """
+    meta = {
+        "version": version,
+        "created_at": _now_iso(),
+        "parent": extra.get("parent"),
+        "source": source,
+        "trigger_run": extra.get("trigger_run"),
+        "trigger_workspace": extra.get("trigger_workspace"),
+        "description": extra.get("description", ""),
+    }
+    (target_dir / "meta.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2)
+    )
+
+
+def init_store(
+    store_dir: Path,
+    videos_source: Path,
+    skills_dir: Path,
+    prompts_dir: Path,
+) -> None:
+    """初始化 Store：拷贝视频数据，创建 skills/v1、prompts/v1 和 questions 目录。
+
+    参数:
+        store_dir: Store 目标路径（不得已存在）。
+        videos_source: 视频数据源目录。
+        skills_dir: 初始 Skill 文件目录。
+        prompts_dir: 初始 Prompt 文件目录。
+
+    异常:
+        FileExistsError: Store 目录已存在。
+    """
+    if store_dir.exists():
+        raise FileExistsError(f"Store 已存在: {store_dir}")
+    store_dir.mkdir(parents=True)
+    shutil.copytree(videos_source, store_dir / "videos")
+    (store_dir / "questions" / "benchmarks").mkdir(parents=True)
+    (store_dir / "questions" / "generated").mkdir(parents=True)
+    shutil.copytree(skills_dir, store_dir / "skills" / "v1")
+    _write_meta(
+        store_dir / "skills" / "v1", "v1", "manual",
+        description="手工创建的初始版本",
+    )
+    shutil.copytree(prompts_dir, store_dir / "prompts" / "v1")
+    _write_meta(
+        store_dir / "prompts" / "v1", "v1", "manual",
+        description="手工创建的初始版本",
+    )
+
+
+def advance_version(
+    store_dir: Path,
+    resource_type: str,
+    source_dir: Path,
+    meta: dict,
+) -> str:
+    """将 source_dir 的内容写入 store 的下一个版本目录，写入 meta.json。
+
+    参数:
+        store_dir: Store 根目录。
+        resource_type: 资源类型路径，如 "skills"、"questions/generated"。
+        source_dir: 包含新版本资源文件的源目录。
+        meta: 元数据字典，至少包含 source 字段。
+
+    返回:
+        新版本号字符串，如 "v2"。
+    """
+    version = next_version(store_dir, resource_type)
+    target = store_dir / resource_type / version
+    shutil.copytree(source_dir, target)
+    _write_meta(
+        target,
+        version,
+        meta.get("source", "manual"),
+        parent=meta.get("parent"),
+        trigger_run=meta.get("trigger_run"),
+        trigger_workspace=meta.get("trigger_workspace"),
+        description=meta.get("description", ""),
+    )
+    return version
