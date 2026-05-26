@@ -195,6 +195,11 @@
       "id": "design:2026-05-26-inference-step",
       "label": "推理步骤（inference）编排设计",
       "type": "design"
+    },
+    {
+      "id": "plan:2026-05-26-inference-step",
+      "label": "推理步骤（inference）实现计划",
+      "type": "plan"
     }
   ],
   "links": [
@@ -554,6 +559,13 @@
       "relation": "refines",
       "evidence": "实现训练循环的 forward() 步骤",
       "added": "2026-05-26T04:24:58.728205+00:00"
+    },
+    {
+      "source": "plan:2026-05-26-inference-step",
+      "target": "design:2026-05-26-inference-step",
+      "relation": "implements",
+      "evidence": "实现推理步骤编排设计中的全部接口",
+      "added": "2026-05-26T04:56:40.726432+00:00"
     }
   ]
 }

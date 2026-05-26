@@ -75,3 +75,6 @@
 - [2026-05-26 04:23 UTC] 新增 design: 推理步骤（inference）编排设计 (design:2026-05-26-inference-step)
 - [2026-05-26 04:24 UTC] 新增边: design:2026-05-26-inference-step --refines--> idea:videotree-evolve
 - [2026-05-26 04:24 UTC] 重建索引: 47 篇页面
+- [2026-05-26 04:47 UTC] 新增 plan: 推理步骤（inference）实现计划 (plan:2026-05-26-inference-step)
+- [2026-05-26 04:56 UTC] 新增边: plan:2026-05-26-inference-step --implements--> design:2026-05-26-inference-step
+- [2026-05-26 04:56 UTC] 重建索引: 48 篇页面

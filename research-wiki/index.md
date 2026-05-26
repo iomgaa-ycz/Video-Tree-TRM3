@@ -1,6 +1,6 @@
 # Research Wiki 索引
 
-> 自动生成，更新时间：2026-05-26 04:24 UTC
+> 自动生成，更新时间：2026-05-26 04:56 UTC
 
 ## paper (23)
 - [A Comprehensive Survey of Self-Evolving AI Agents: A New Paradigm Bridging Foundation Models and Lifelong Agentic Systems](papers/fang2025_a_comprehensive_survey_of_self.md) `paper:fang2025_a_comprehensive_survey_of_self`
@@ -47,7 +47,7 @@
 - [搜索 Agent 工具层设计](designs/2026-05-25-agent-tools-design.md) `design:agent-tools`
 - [数据结构层设计：Agent Loop + Harness 四任务](designs/2026-05-25-data-structures.md) `design:2026-05-25-data-structures`
 
-## plan (10)
+## plan (11)
 - [2026-05-25-agent-loop](plans/2026-05-25-agent-loop.md) `plan:2026-05-25-agent-loop`
 - [2026-05-25-agent-tools](plans/2026-05-25-agent-tools.md) `plan:2026-05-25-agent-tools`
 - [2026-05-25-llm-asr-client](plans/2026-05-25-llm-asr-client.md) `plan:2026-05-25-llm-asr-client`
@@ -56,5 +56,6 @@
 - [LLM & ASR Client 实现计划](plans/llm-asr-client.md) `plan:llm-asr-client`
 - [System Prompt 迁移与 PromptManager 实现计划](plans/prompt-manager-plan.md) `plan:prompt-manager-plan`
 - [Workspace + Store 实现计划](plans/workspace-store.md) `plan:workspace-store`
+- [推理步骤（inference）实现计划](plans/2026-05-26-inference-step.md) `plan:2026-05-26-inference-step`
 - [搜索 Agent 工具层实现计划](plans/agent-tools.md) `plan:agent-tools`
 - [数据结构层实现计划](plans/2026-05-25-data-structures.md) `plan:2026-05-25-data-structures`
