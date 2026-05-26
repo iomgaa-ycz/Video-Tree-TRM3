@@ -56,22 +56,30 @@ class TracePlugin:
 
     @hookimpl
     def on_finish(self, result: LoopResult) -> None:
-        counts = {"1": 0, "2": 0, "3": 0}
+        """统计 view_node 的层级访问次数，写入 validation_flags 表。"""
+        l1, l2, l3 = 0, 0, 0
         for step in result.steps:
-            if step.tool_call["tool"] != "view_node":
+            if step.tool_call.get("tool") != "view_node":
                 continue
             node_id = step.tool_call.get("args", {}).get("node_id", "")
-            match = re.search(r"_L(\d+)_", node_id)
-            if match and match.group(1) in counts:
-                counts[match.group(1)] += 1
+            matches = re.findall(r"_L(\d+)_", node_id)
+            if matches:
+                level = int(matches[-1])
+                if level == 1:
+                    l1 += 1
+                elif level == 2:
+                    l2 += 1
+                elif level == 3:
+                    l3 += 1
         self._log.insert(
             "validation_flags",
             {
                 "video_id": self._video_id,
                 "question_id": self._question_id,
-                "l1_visits": counts["1"],
-                "l2_visits": counts["2"],
-                "l3_visits": counts["3"],
+                "has_l3_visit": 1 if l3 > 0 else 0,
+                "l1_count": l1,
+                "l2_count": l2,
+                "l3_count": l3,
             },
         )
 
@@ -90,40 +98,61 @@ def _run_single_question(
     catalog_text: str,
     prompts_dir: Path,
 ) -> dict[str, Any]:
-    record = {
+    """执行单道题目的 Agent 推理。
+
+    创建独立的 search_client 和 AgentLoop（线程安全），
+    通过 PromptManager 组装 prompt，运行循环，结果写入 log。
+
+    参数:
+        qa: 待推理的题目。
+        env: TreeEnvironment 实例（同 video_id 的题目共享）。
+        vl_client: 视觉模型 LLMClient（共享）。
+        prompt_mgr: PromptManager 实例。
+        skill_registry: SkillRegistry 实例。
+        log: HarnessLog 实例（线程安全）。
+        max_steps: AgentLoop 最大步数。
+        skill_mode: "auto" / "manual" / "none"。
+        always_skills_text: always 层 skill 全文。
+        task_skill_map: {task_type: skill_body} 映射。
+        catalog_text: manual 模式的 skill 目录文本。
+        prompts_dir: prompt 文件目录。
+
+    返回:
+        预测结果字典。
+    """
+    record: dict[str, Any] = {
         "video_id": qa.video_id,
         "question_id": qa.question_id,
-        "prediction": "",
+        "task_type": qa.task_type,
+        "prediction": None,
         "answer": qa.answer,
-        "correct": False,
+        "evidence": "",
+        "reasoning": "",
+        "steps_used": 0,
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
         "stop_reason": "error",
-        "steps": "[]",
-        "token_usage": "{}",
-        "steps_count": 0,
+        "steps_json": "[]",
     }
 
     try:
         search_client = LLMClient.from_env("SEARCH_LLM", thinking=True)
         loop = AgentLoop(search_client, max_steps=max_steps)
-        try:
-            system_prompt = prompt_mgr.build_inference_prompt(
-                always_skills_text=always_skills_text,
-                task_skill_map=task_skill_map,
-                catalog_text=catalog_text,
-            )
-        except TypeError:
-            system_prompt = prompt_mgr.build_inference_prompt(
-                skill_mode=skill_mode,
-                task_type=qa.task_type,
-                always_skills_text=always_skills_text,
-                task_skill_map=task_skill_map,
-                catalog_text=catalog_text,
-            )
+
+        system_prompt = prompt_mgr.build_inference_prompt(
+            skill_mode=skill_mode,
+            task_type=qa.task_type,
+            always_skills_text=always_skills_text,
+            task_skill_map=task_skill_map,
+            catalog_text=catalog_text,
+        )
+
         l1_ids = sorted(
             nid for nid, node in env._nodes.items() if node.get("level") == 1
         )
         qa_dict = {"question": qa.question, "options": qa.options}
         user_prompt = prompt_mgr.format_user_prompt(qa_dict, l1_ids)
+
         trace_plugin = TracePlugin(log, qa.video_id, qa.question_id)
         tool_fn = partial(
             dispatch,
@@ -132,32 +161,36 @@ def _run_single_question(
             prompts_dir=prompts_dir,
             skills=skill_registry if skill_mode == "manual" else None,
         )
+
         loop_result = loop.run(
             system_prompt, user_prompt, tool_fn, plugins=[trace_plugin]
         )
-        prediction = getattr(loop_result, "answer", None)
-        if prediction is None:
-            result_payload = getattr(loop_result, "result", None)
-            if isinstance(result_payload, dict):
-                prediction = result_payload.get("answer")
-        record["prediction"] = prediction or ""
-        record["stop_reason"] = loop_result.stop_reason
-        record["token_usage"] = json.dumps(loop_result.token_usage)
-        record["steps_count"] = len(loop_result.steps)
-        record["correct"] = record["prediction"] == qa.answer
-        record["steps"] = json.dumps(
-            [
-                {
-                    "thought": s.thought,
-                    "tool_call": s.tool_call,
-                    "tool_output": s.tool_output,
-                }
-                for s in loop_result.steps
-            ]
+
+        result_dict = loop_result.result if isinstance(loop_result.result, dict) else {}
+        record.update(
+            {
+                "prediction": result_dict.get("answer"),
+                "evidence": result_dict.get("evidence", ""),
+                "reasoning": result_dict.get("reasoning", ""),
+                "steps_used": loop_result.steps_used,
+                "prompt_tokens": loop_result.token_usage["prompt_tokens"],
+                "completion_tokens": loop_result.token_usage["completion_tokens"],
+                "stop_reason": loop_result.stop_reason,
+                "steps_json": json.dumps(
+                    [
+                        {
+                            "thought": s.thought,
+                            "tool_call": s.tool_call,
+                            "tool_output": s.tool_output,
+                        }
+                        for s in loop_result.steps
+                    ],
+                    ensure_ascii=False,
+                ),
+            }
         )
     except Exception:
-        logger.exception("推理失败 question_id=%s", qa.question_id)
-    finally:
-        log.insert("predictions", record)
+        logger.exception("[{}] QA {} 执行异常", qa.video_id, qa.question_id)
 
+    log.insert("predictions", record)
     return record

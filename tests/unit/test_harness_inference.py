@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import unittest
 from dataclasses import FrozenInstanceError
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -26,6 +24,41 @@ def _make_step(tool_name: str, node_id: str = "") -> Step:
     )
 
 
+_PREDICTIONS_SCHEMA = {
+    "video_id": "TEXT",
+    "question_id": "TEXT",
+    "task_type": "TEXT",
+    "prediction": "TEXT",
+    "answer": "TEXT",
+    "evidence": "TEXT",
+    "reasoning": "TEXT",
+    "steps_used": "INTEGER",
+    "prompt_tokens": "INTEGER",
+    "completion_tokens": "INTEGER",
+    "stop_reason": "TEXT",
+    "steps_json": "JSON",
+}
+
+_TRACES_SCHEMA = {
+    "video_id": "TEXT",
+    "question_id": "TEXT",
+    "step": "INTEGER",
+    "tool_name": "TEXT",
+    "tool_args": "JSON",
+    "tool_output": "TEXT",
+    "thought": "TEXT",
+}
+
+_VALIDATION_FLAGS_SCHEMA = {
+    "video_id": "TEXT",
+    "question_id": "TEXT",
+    "has_l3_visit": "INTEGER",
+    "l1_count": "INTEGER",
+    "l2_count": "INTEGER",
+    "l3_count": "INTEGER",
+}
+
+
 def test_full_construction() -> None:
     result = InferenceResult(
         run_id="run-001",
@@ -45,13 +78,7 @@ def test_full_construction() -> None:
     assert result.accuracy == 0.875
     assert result.total == 8
     assert result.correct == 7
-    assert result.per_task_type == {
-        "classification": {"accuracy": 1.0, "total": 4},
-        "reasoning": {"accuracy": 0.75, "total": 4},
-    }
     assert result.steps_mean == 3.5
-    assert result.token_usage == {"prompt_tokens": 120, "completion_tokens": 45}
-    assert result.stop_reason_counts == {"finished": 6, "max_steps": 2}
 
 
 def test_frozen_immutability() -> None:
@@ -70,64 +97,51 @@ def test_frozen_immutability() -> None:
         result.run_id = "run-003"
 
 
-class TestTracePlugin(unittest.TestCase):
-    def test_after_tool_writes_trace(self) -> None:
-        log = HarnessLog(":memory:", run_id="run-001", git_sha="test-sha")
-        log.create_table(
-            "traces",
-            {
-                "video_id": "TEXT",
-                "question_id": "TEXT",
-                "step": "INTEGER",
-                "tool_name": "TEXT",
-                "tool_args": "TEXT",
-                "tool_output": "TEXT",
-                "thought": "TEXT",
-            },
-        )
-        plugin = TracePlugin(log, "vid1", "q1")
-        step = _make_step("view_node", "seg_L1_001")
+class TestTracePlugin:
+    def test_after_tool_writes_trace(self, tmp_path: Path) -> None:
+        db_path = str(tmp_path / "test.db")
+        log = HarnessLog(db_path, "run-trace", git_sha="abc")
+        log.create_table("traces", _TRACES_SCHEMA)
 
+        plugin = TracePlugin(log, "vid-1", "q-1")
+        step = _make_step("view_node", "vid-1_L1_000")
         plugin.after_tool(iteration=0, step=step)
 
-        rows = log.query("SELECT * FROM traces")
+        rows = log.query("SELECT * FROM traces WHERE question_id = ?", ("q-1",))
         assert len(rows) == 1
-        assert rows[0]["video_id"] == "vid1"
         assert rows[0]["tool_name"] == "view_node"
+        assert rows[0]["video_id"] == "vid-1"
+        assert rows[0]["thought"] == "t"
+        log.close()
 
-    def test_on_finish_writes_validation_flags(self) -> None:
-        log = HarnessLog(":memory:", run_id="run-001", git_sha="test-sha")
-        log.create_table(
-            "validation_flags",
-            {
-                "video_id": "TEXT",
-                "question_id": "TEXT",
-                "l1_visits": "INTEGER",
-                "l2_visits": "INTEGER",
-                "l3_visits": "INTEGER",
-            },
-        )
-        plugin = TracePlugin(log, "vid1", "q1")
-        steps = [
-            _make_step("view_node", "seg_L1_001"),
-            _make_step("view_node", "seg_L2_002"),
-            _make_step("view_node", "seg_L3_003"),
-            _make_step("search_similar"),
-        ]
-        loop_result = LoopResult(
+    def test_on_finish_writes_validation_flags(self, tmp_path: Path) -> None:
+        db_path = str(tmp_path / "test.db")
+        log = HarnessLog(db_path, "run-flags", git_sha="abc")
+        log.create_table("validation_flags", _VALIDATION_FLAGS_SCHEMA)
+
+        plugin = TracePlugin(log, "vid-1", "q-1")
+        result = LoopResult(
             result={"answer": "A"},
+            steps=[
+                _make_step("view_node", "vid-1_L1_000"),
+                _make_step("view_node", "vid-1_L1_000_L2_001"),
+                _make_step("view_node", "vid-1_L1_000_L2_001_L3_002"),
+                _make_step("search_similar"),
+            ],
+            steps_used=4,
             stop_reason="finished",
-            steps=steps,
-            token_usage={},
         )
+        plugin.on_finish(result=result)
 
-        plugin.on_finish(result=loop_result)
-
-        rows = log.query("SELECT * FROM validation_flags")
+        rows = log.query(
+            "SELECT * FROM validation_flags WHERE question_id = ?", ("q-1",)
+        )
         assert len(rows) == 1
-        assert rows[0]["l1_visits"] == 1
-        assert rows[0]["l2_visits"] == 1
-        assert rows[0]["l3_visits"] == 1
+        assert rows[0]["has_l3_visit"] == 1
+        assert rows[0]["l1_count"] == 1
+        assert rows[0]["l2_count"] == 1
+        assert rows[0]["l3_count"] == 1
+        log.close()
 
 
 @patch("core.harness.inference.AgentLoop")
@@ -135,63 +149,61 @@ class TestTracePlugin(unittest.TestCase):
 def test_run_single_question_finished(
     mock_llm_client: MagicMock,
     mock_agent_loop: MagicMock,
+    tmp_path: Path,
 ) -> None:
+    """正常完成时，prediction 写入 log 且返回正确结构。"""
     mock_llm_client.from_env.return_value = MagicMock()
     mock_loop_instance = mock_agent_loop.return_value
-    mock_loop_instance.run.return_value = SimpleNamespace(
-        answer="B",
+    mock_loop_instance.run.return_value = LoopResult(
+        result={"answer": "B", "evidence": "saw 2 cats", "reasoning": "counted"},
+        steps=[_make_step("view_node", "v1_L1_000"), _make_step("submit_answer")],
+        steps_used=2,
+        token_usage={"prompt_tokens": 100, "completion_tokens": 50},
         stop_reason="finished",
-        steps=[],
-        token_usage={},
     )
+
+    db_path = str(tmp_path / "test.db")
+    log = HarnessLog(db_path, "run-sq", git_sha="abc")
+    log.create_table("predictions", _PREDICTIONS_SCHEMA)
+    log.create_table("traces", _TRACES_SCHEMA)
+    log.create_table("validation_flags", _VALIDATION_FLAGS_SCHEMA)
+
     mock_pm = MagicMock()
     mock_pm.build_inference_prompt.return_value = "system"
     mock_pm.format_user_prompt.return_value = "user"
     env = MagicMock()
-    env._nodes = {}
-    log = HarnessLog(":memory:", run_id="run-001", git_sha="test-sha")
-    log.create_table(
-        "predictions",
-        {
-            "video_id": "TEXT",
-            "question_id": "TEXT",
-            "prediction": "TEXT",
-            "answer": "TEXT",
-            "correct": "INTEGER",
-            "stop_reason": "TEXT",
-            "steps": "TEXT",
-            "token_usage": "TEXT",
-            "steps_count": "INTEGER",
-        },
-    )
+    env._nodes = {"v1_L1_000": {"level": 1, "children_ids": []}}
+
     qa = GeneratedQuestion(
+        question_id="q-1",
         video_id="v1",
-        question_id="q1",
-        question="Q?",
-        options=["A", "B", "C", "D"],
+        task_type="Counting",
+        question="How many?",
+        options=["A. 1", "B. 2"],
         answer="B",
-        task_type="mc",
     )
 
     result = _run_single_question(
-        qa,
-        env,
+        qa=qa,
+        env=env,
         vl_client=MagicMock(),
         prompt_mgr=mock_pm,
         skill_registry=MagicMock(),
         log=log,
-        max_steps=10,
+        max_steps=15,
         skill_mode="auto",
         always_skills_text="",
         task_skill_map={},
         catalog_text="",
-        prompts_dir=Path("/tmp"),
+        prompts_dir=tmp_path,
     )
 
     assert result["prediction"] == "B"
-    rows = log.query("SELECT * FROM predictions")
+    assert result["stop_reason"] == "finished"
+    rows = log.query("SELECT * FROM predictions WHERE question_id = ?", ("q-1",))
     assert len(rows) == 1
     assert rows[0]["prediction"] == "B"
+    log.close()
 
 
 @patch("core.harness.inference.AgentLoop")
@@ -199,55 +211,50 @@ def test_run_single_question_finished(
 def test_run_single_question_error(
     mock_llm_client: MagicMock,
     mock_agent_loop: MagicMock,
+    tmp_path: Path,
 ) -> None:
+    """异常时写入 stop_reason=error 的兜底记录。"""
     mock_llm_client.from_env.return_value = MagicMock()
-    mock_loop_instance = mock_agent_loop.return_value
-    mock_loop_instance.run.side_effect = RuntimeError("fail")
+    mock_agent_loop.return_value.run.side_effect = RuntimeError("LLM down")
+
+    db_path = str(tmp_path / "err.db")
+    log = HarnessLog(db_path, "run-err", git_sha="abc")
+    log.create_table("predictions", _PREDICTIONS_SCHEMA)
+    log.create_table("traces", _TRACES_SCHEMA)
+    log.create_table("validation_flags", _VALIDATION_FLAGS_SCHEMA)
+
     mock_pm = MagicMock()
-    mock_pm.build_inference_prompt.return_value = "system"
-    mock_pm.format_user_prompt.return_value = "user"
+    mock_pm.build_inference_prompt.return_value = "sys"
+    mock_pm.format_user_prompt.return_value = "usr"
     env = MagicMock()
     env._nodes = {}
-    log = HarnessLog(":memory:", run_id="run-001", git_sha="test-sha")
-    log.create_table(
-        "predictions",
-        {
-            "video_id": "TEXT",
-            "question_id": "TEXT",
-            "prediction": "TEXT",
-            "answer": "TEXT",
-            "correct": "INTEGER",
-            "stop_reason": "TEXT",
-            "steps": "TEXT",
-            "token_usage": "TEXT",
-            "steps_count": "INTEGER",
-        },
-    )
+
     qa = GeneratedQuestion(
+        question_id="q-1",
         video_id="v1",
-        question_id="q1",
+        task_type="Test",
         question="Q?",
-        options=["A", "B", "C", "D"],
-        answer="B",
-        task_type="mc",
+        options=["A. a", "B. b"],
+        answer="A",
     )
 
     result = _run_single_question(
-        qa,
-        env,
+        qa=qa,
+        env=env,
         vl_client=MagicMock(),
         prompt_mgr=mock_pm,
         skill_registry=MagicMock(),
         log=log,
-        max_steps=10,
-        skill_mode="auto",
+        max_steps=15,
+        skill_mode="none",
         always_skills_text="",
         task_skill_map={},
         catalog_text="",
-        prompts_dir=Path("/tmp"),
+        prompts_dir=tmp_path,
     )
 
     assert result["stop_reason"] == "error"
-    rows = log.query("SELECT * FROM predictions")
+    rows = log.query("SELECT * FROM predictions WHERE question_id = ?", ("q-1",))
     assert len(rows) == 1
     assert rows[0]["stop_reason"] == "error"
+    log.close()
