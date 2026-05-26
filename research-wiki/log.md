@@ -1,0 +1,77 @@
+# Wiki 变更日志
+
+- [2026-05-12 14:00 UTC] Wiki 初始化完成
+- [2026-05-12 14:00 UTC] 新增实体: paper:vaswani2017_attention_is_all_you_need
+- [2026-05-19 10:00 UTC] 新增实体: paper:wang2024_videotree_adaptive_tree_based_
+- [2026-05-19 10:00 UTC] 新增实体: paper:yang2024_vca_video_curious_agent_for_lo
+- [2026-05-19 10:00 UTC] 新增实体: paper:luo2024_video_rag_visually_aligned_ret
+- [2026-05-19 10:00 UTC] 新增实体: paper:jiapeng2024_tree_of_reviews_a_tree_based_d
+- [2026-05-19 10:00 UTC] 新增实体: paper:ye2025_t_re_thinking_temporal_search_
+- [2026-05-19 10:00 UTC] 新增实体: paper:pan2025_timesearch_hierarchical_video_
+- [2026-05-19 10:00 UTC] 新增实体: paper:zhang2025_deep_video_discovery_agentic_s
+- [2026-05-19 10:00 UTC] 新增实体: paper:hu2025_cos_chain_of_shot_prompting_fo
+- [2026-05-19 10:00 UTC] 新增实体: paper:hu2025_mcts_rag_enhancing_retrieval_a
+- [2026-05-19 10:00 UTC] 新增实体: paper:chen2025_lvagent_long_video_understandi
+- [2026-05-19 10:00 UTC] 新增实体: paper:liu2025_videomind_a_chain_of_lora_agen
+- [2026-05-19 10:00 UTC] 新增实体: paper:yin2025_videoarm_agentic_reasoning_ove
+- [2026-05-19 10:00 UTC] 新增实体: paper:wang2025_active_video_perception_iterat
+- [2026-05-19 10:00 UTC] 新增实体: paper:ren2025_videorag_retrieval_augmented_g
+- [2026-05-19 10:00 UTC] 新增实体: paper:lee2025_video_skill_cot_skill_based_ch
+- [2026-05-19 10:00 UTC] 新增实体: paper:pan2025_timesearch_r_adaptive_temporal
+- [2026-05-19 10:00 UTC] 新增实体: paper:zuo2025_videolucy_deep_memory_backtrac
+- [2026-05-19 10:00 UTC] 新增实体: paper:fang2025_a_comprehensive_survey_of_self
+- [2026-05-19 10:00 UTC] 新增实体: paper:yin2026_hierarchical_long_video_unders
+- [2026-05-19 10:00 UTC] 新增实体: paper:ouyang2026_skillos_learning_skill_curatio
+- [2026-05-19 10:00 UTC] 新增实体: paper:zhang2026_memskill_learning_and_evolving
+- [2026-05-19 10:00 UTC] 新增实体: paper:li2026_videothinker_building_agentic_
+- [2026-05-19 10:30 UTC] 新增实体: gap:learnable-tree-search-video
+- [2026-05-19 10:30 UTC] 新增实体: gap:recursive-reasoning-for-retrieval
+- [2026-05-19 10:30 UTC] 新增实体: gap:self-evolving-video-agent
+- [2026-05-19 11:00 UTC] 新增实体: idea:videotree-evolve
+- [2026-05-24 12:00 UTC] 补全边: idea:videotree-evolve --addresses_gap--> gap:learnable-tree-search-video
+- [2026-05-24 12:00 UTC] 补全边: idea:videotree-evolve --addresses_gap--> gap:self-evolving-video-agent
+- [2026-05-24 12:00 UTC] 补全边: idea:videotree-evolve --inspired_by--> paper:wang2024_videotree_adaptive_tree_based_
+- [2026-05-24 12:00 UTC] 补全边: idea:videotree-evolve --inspired_by--> paper:yang2024_vca_video_curious_agent_for_lo
+- [2026-05-24 12:00 UTC] 补全边: idea:videotree-evolve --inspired_by--> paper:ouyang2026_skillos_learning_skill_curatio
+- [2026-05-24 12:00 UTC] 补全边: idea:videotree-evolve --inspired_by--> paper:zhang2026_memskill_learning_and_evolving
+- [2026-05-24 12:00 UTC] 补全边: 12 篇论文 --informs--> gap:learnable-tree-search-video
+- [2026-05-24 12:00 UTC] 补全边: 4 篇论文 --informs--> gap:self-evolving-video-agent
+- [2026-05-24 12:00 UTC] 补全边: 2 篇论文 --informs--> gap:recursive-reasoning-for-retrieval
+- [2026-05-24 12:00 UTC] 补全边: 9 条论文间关系 (extends/informs)
+- [2026-05-25 07:45 UTC] 新增 design: LLM Client & ASR Client 设计 (design:llm-asr-client)
+- [2026-05-25 07:45 UTC] 重建索引: 29 篇页面
+- [2026-05-25 07:51 UTC] 新增 plan: LLM & ASR Client 实现计划 (plan:llm-asr-client)
+- [2026-05-25 07:51 UTC] 新增边: plan:llm-asr-client --implements--> design:llm-asr-client
+- [2026-05-25 07:51 UTC] 重建索引: 31 篇页面
+- [2026-05-25 12:57 UTC] 新增 design: Workspace + Store 架构设计 (design:workspace-store)
+- [2026-05-25 12:58 UTC] 新增边: design:workspace-store --refines--> idea:videotree-evolve
+- [2026-05-25 12:58 UTC] 重建索引: 32 篇页面
+- [2026-05-25 13:00 UTC] 新增 plan: Workspace + Store 实现计划 (plan:workspace-store)
+- [2026-05-25 13:03 UTC] 新增边: plan:workspace-store --implements--> design:workspace-store
+- [2026-05-25 13:03 UTC] 重建索引: 33 篇页面
+- [2026-05-25 15:35 UTC] 新增边: design:agent-tools --refines--> idea:videotree-evolve
+- [2026-05-25 15:35 UTC] 新增边: design:agent-tools --depends_on--> design:workspace-store
+- [2026-05-25 15:35 UTC] 重建索引: 34 篇页面
+- [2026-05-25 15:50 UTC] 新增 plan: 搜索 Agent 工具层实现计划 (plan:agent-tools)
+- [2026-05-25 15:50 UTC] 新增边: plan:agent-tools --implements--> design:agent-tools
+- [2026-05-25 15:50 UTC] 重建索引: 36 篇页面
+- [2026-05-26 01:26 UTC] 新增 design: 数据结构层设计：Agent Loop + Harness 四任务 (design:2026-05-25-data-structures)
+- [2026-05-26 01:27 UTC] 新增边: design:2026-05-25-data-structures --refines--> idea:videotree-evolve
+- [2026-05-26 01:27 UTC] 重建索引: 37 篇页面
+- [2026-05-26 01:28 UTC] 新增 plan: 数据结构层实现计划 (plan:2026-05-25-data-structures)
+- [2026-05-26 01:33 UTC] 新增边: plan:2026-05-25-data-structures --implements--> design:2026-05-25-data-structures
+- [2026-05-26 01:33 UTC] 重建索引: 38 篇页面
+- [2026-05-26 02:17 UTC] 新增 design: AgentLoop: Thinking+JSON 推理循环引擎 (design:agent-loop)
+- [2026-05-26 02:17 UTC] 新增边: design:agent-loop --refines--> idea:videotree-evolve
+- [2026-05-26 02:17 UTC] 重建索引: 40 篇页面
+- [2026-05-26 02:22 UTC] 新增 plan: AgentLoop 实现计划 (plan:agent-loop)
+- [2026-05-26 02:22 UTC] 新增边: plan:agent-loop --implements--> design:agent-loop
+- [2026-05-26 02:22 UTC] 重建索引: 42 篇页面
+- [2026-05-26 03:09 UTC] 新增 design: System Prompt 迁移与 PromptManager 设计 (design:prompt-manager)
+- [2026-05-26 03:09 UTC] 重建索引: 44 篇页面
+- [2026-05-26 03:17 UTC] 新增 plan: System Prompt 迁移与 PromptManager 实现计划 (plan:prompt-manager-plan)
+- [2026-05-26 03:17 UTC] 新增边: plan:prompt-manager-plan --implements--> design:prompt-manager
+- [2026-05-26 03:17 UTC] 重建索引: 46 篇页面
+- [2026-05-26 04:23 UTC] 新增 design: 推理步骤（inference）编排设计 (design:2026-05-26-inference-step)
+- [2026-05-26 04:24 UTC] 新增边: design:2026-05-26-inference-step --refines--> idea:videotree-evolve
+- [2026-05-26 04:24 UTC] 重建索引: 47 篇页面

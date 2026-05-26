@@ -1,0 +1,559 @@
+{
+  "directed": true,
+  "nodes": [
+    {
+      "id": "paper:vaswani2017_attention_is_all_you_need",
+      "label": "Attention Is All You Need",
+      "type": "paper"
+    },
+    {
+      "id": "paper:wang2024_videotree_adaptive_tree_based_",
+      "label": "VideoTree: Adaptive Tree-based Video Representation for LLM Reasoning on Long Videos",
+      "type": "paper"
+    },
+    {
+      "id": "paper:yang2024_vca_video_curious_agent_for_lo",
+      "label": "VCA: Video Curious Agent for Long Video Understanding",
+      "type": "paper"
+    },
+    {
+      "id": "paper:luo2024_video_rag_visually_aligned_ret",
+      "label": "Video-RAG: Visually-aligned Retrieval-Augmented Long Video Comprehension",
+      "type": "paper"
+    },
+    {
+      "id": "paper:jiapeng2024_tree_of_reviews_a_tree_based_d",
+      "label": "Tree of Reviews: A Tree-based Dynamic Iterative Retrieval Framework for Multi-hop Question Answering",
+      "type": "paper"
+    },
+    {
+      "id": "paper:ye2025_t_re_thinking_temporal_search_",
+      "label": "T*: Re-thinking Temporal Search for Long-Form Video Understanding",
+      "type": "paper"
+    },
+    {
+      "id": "paper:pan2025_timesearch_hierarchical_video_",
+      "label": "TimeSearch: Hierarchical Video Search with Spotlight and Reflection for Human-like Long Video Understanding",
+      "type": "paper"
+    },
+    {
+      "id": "paper:zhang2025_deep_video_discovery_agentic_s",
+      "label": "Deep Video Discovery: Agentic Search with Tool Use for Long-form Video Understanding",
+      "type": "paper"
+    },
+    {
+      "id": "paper:hu2025_cos_chain_of_shot_prompting_fo",
+      "label": "CoS: Chain-of-Shot Prompting for Long Video Understanding",
+      "type": "paper"
+    },
+    {
+      "id": "paper:hu2025_mcts_rag_enhancing_retrieval_a",
+      "label": "MCTS-RAG: Enhancing Retrieval-Augmented Generation with Monte Carlo Tree Search",
+      "type": "paper"
+    },
+    {
+      "id": "paper:chen2025_lvagent_long_video_understandi",
+      "label": "LVAgent: Long Video Understanding by Multi-Round Dynamical Collaboration of MLLM Agents",
+      "type": "paper"
+    },
+    {
+      "id": "paper:liu2025_videomind_a_chain_of_lora_agen",
+      "label": "VideoMind: A Chain-of-LoRA Agent for Temporal-Grounded Video Reasoning",
+      "type": "paper"
+    },
+    {
+      "id": "paper:yin2025_videoarm_agentic_reasoning_ove",
+      "label": "VideoARM: Agentic Reasoning over Hierarchical Memory for Long-Form Video Understanding",
+      "type": "paper"
+    },
+    {
+      "id": "paper:wang2025_active_video_perception_iterat",
+      "label": "Active Video Perception: Iterative Evidence Seeking for Agentic Long Video Understanding",
+      "type": "paper"
+    },
+    {
+      "id": "paper:ren2025_videorag_retrieval_augmented_g",
+      "label": "VideoRAG: Retrieval-Augmented Generation with Extreme Long-Context Videos",
+      "type": "paper"
+    },
+    {
+      "id": "paper:lee2025_video_skill_cot_skill_based_ch",
+      "label": "Video-Skill-CoT: Skill-based Chain-of-Thoughts for Domain-Adaptive Video Reasoning",
+      "type": "paper"
+    },
+    {
+      "id": "paper:pan2025_timesearch_r_adaptive_temporal",
+      "label": "TimeSearch-R: Adaptive Temporal Search for Long-Form Video Understanding via Self-Verification Reinforcement Learning",
+      "type": "paper"
+    },
+    {
+      "id": "paper:zuo2025_videolucy_deep_memory_backtrac",
+      "label": "VideoLucy: Deep Memory Backtracking for Long Video Understanding",
+      "type": "paper"
+    },
+    {
+      "id": "paper:fang2025_a_comprehensive_survey_of_self",
+      "label": "A Comprehensive Survey of Self-Evolving AI Agents",
+      "type": "paper"
+    },
+    {
+      "id": "paper:yin2026_hierarchical_long_video_unders",
+      "label": "Hierarchical Long Video Understanding with Audiovisual Entity Cohesion and Agentic Search",
+      "type": "paper"
+    },
+    {
+      "id": "paper:ouyang2026_skillos_learning_skill_curatio",
+      "label": "SkillOS: Learning Skill Curation for Self-Evolving Agents",
+      "type": "paper"
+    },
+    {
+      "id": "paper:zhang2026_memskill_learning_and_evolving",
+      "label": "MemSkill: Learning and Evolving Memory Skills for Self-Evolving Agents",
+      "type": "paper"
+    },
+    {
+      "id": "paper:li2026_videothinker_building_agentic_",
+      "label": "VideoThinker: Building Agentic VideoLLMs with LLM-Guided Tool Reasoning",
+      "type": "paper"
+    },
+    {
+      "id": "gap:learnable-tree-search-video",
+      "label": "可学习的视频树搜索策略",
+      "type": "gap"
+    },
+    {
+      "id": "gap:recursive-reasoning-for-retrieval",
+      "label": "递归推理用于检索",
+      "type": "gap"
+    },
+    {
+      "id": "gap:self-evolving-video-agent",
+      "label": "自进化视频理解 Agent",
+      "type": "gap"
+    },
+    {
+      "id": "idea:videotree-evolve",
+      "label": "VideoTree-Evolve: Harness-Driven 可自我进化的视频树搜索 Agent",
+      "type": "idea"
+    },
+    {
+      "id": "design:llm-asr-client",
+      "label": "LLM Client & ASR Client 设计",
+      "type": "design"
+    },
+    {
+      "id": "plan:llm-asr-client",
+      "label": "LLM & ASR Client 实现计划",
+      "type": "plan"
+    },
+    {
+      "id": "design:workspace-store",
+      "label": "Workspace + Store 架构设计",
+      "type": "design"
+    },
+    {
+      "id": "plan:workspace-store",
+      "label": "Workspace + Store 实现计划",
+      "type": "plan"
+    },
+    {
+      "id": "plan:agent-tools",
+      "label": "搜索 Agent 工具层实现计划",
+      "type": "plan"
+    },
+    {
+      "id": "design:2026-05-25-data-structures",
+      "label": "数据结构层设计：Agent Loop + Harness 四任务",
+      "type": "design"
+    },
+    {
+      "id": "plan:2026-05-25-data-structures",
+      "label": "数据结构层实现计划",
+      "type": "plan"
+    },
+    {
+      "id": "design:agent-loop",
+      "label": "AgentLoop: Thinking+JSON 推理循环引擎",
+      "type": "design"
+    },
+    {
+      "id": "plan:agent-loop",
+      "label": "AgentLoop 实现计划",
+      "type": "plan"
+    },
+    {
+      "id": "design:prompt-manager",
+      "label": "System Prompt 迁移与 PromptManager 设计",
+      "type": "design"
+    },
+    {
+      "id": "plan:prompt-manager-plan",
+      "label": "System Prompt 迁移与 PromptManager 实现计划",
+      "type": "plan"
+    },
+    {
+      "id": "design:2026-05-26-inference-step",
+      "label": "推理步骤（inference）编排设计",
+      "type": "design"
+    }
+  ],
+  "links": [
+    {
+      "source": "idea:videotree-evolve",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "addresses_gap",
+      "evidence": "idea 文件明确声明填补此 gap：通过 Harness Engineering 实现可学习的自适应树搜索",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "idea:videotree-evolve",
+      "target": "gap:self-evolving-video-agent",
+      "relation": "addresses_gap",
+      "evidence": "idea 文件明确声明填补此 gap：通过进化引擎实现搜索技能的自我进化",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "idea:videotree-evolve",
+      "target": "paper:wang2024_videotree_adaptive_tree_based_",
+      "relation": "inspired_by",
+      "evidence": "idea 文件列出 VideoTree 为受启发论文；视频树结构直接继承自 VideoTree 的三层树设计",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "idea:videotree-evolve",
+      "target": "paper:yang2024_vca_video_curious_agent_for_lo",
+      "relation": "inspired_by",
+      "evidence": "idea 文件列出 VCA 为受启发论文；树搜索+好奇心驱动的自主探索思想",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "idea:videotree-evolve",
+      "target": "paper:ouyang2026_skillos_learning_skill_curatio",
+      "relation": "inspired_by",
+      "evidence": "idea 文件列出 SkillOS 为受启发论文；Skill 自选与进化机制",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "idea:videotree-evolve",
+      "target": "paper:zhang2026_memskill_learning_and_evolving",
+      "relation": "inspired_by",
+      "evidence": "idea 文件列出 MemSkill 为受启发论文；记忆技能的学习与进化",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:wang2024_videotree_adaptive_tree_based_",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "VideoTree 使用固定规则构建自适应树，但搜索策略不可学习，正是此 gap 的典型例证",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:pan2025_timesearch_hierarchical_video_",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "TimeSearch 使用层级搜索但流程手工设计，搜索策略不可学习",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:pan2025_timesearch_r_adaptive_temporal",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "TimeSearch-R 通过 RL 学习搜索策略，是最接近可学习树搜索的工作",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:ye2025_t_re_thinking_temporal_search_",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "T* 将时序搜索重构为空间搜索，但仍非可学习策略",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:yang2024_vca_video_curious_agent_for_lo",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "VCA 使用树搜索+好奇心驱动探索，但搜索策略固定",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:zhang2025_deep_video_discovery_agentic_s",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "DVD 使用 agentic search 但工具集和搜索策略固定",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:wang2025_active_video_perception_iterat",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "AVP 的迭代 plan-observe-reflect 流程固定，搜索策略不可学习",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:yin2025_videoarm_agentic_reasoning_ove",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "VideoARM 使用层级记忆但搜索方式不可学习",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:zuo2025_videolucy_deep_memory_backtrac",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "VideoLucy 使用层级记忆回溯但搜索策略固定",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:yin2026_hierarchical_long_video_unders",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "HAVEN 使用层级视频索引+agentic search，但搜索策略不可学习",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:li2026_videothinker_building_agentic_",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "VideoThinker 使用 agentic tool reasoning 但策略固定",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:liu2025_videomind_a_chain_of_lora_agen",
+      "target": "gap:learnable-tree-search-video",
+      "relation": "informs",
+      "evidence": "VideoMind 的 role-based agentic workflow 固定，搜索策略不可学习",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:fang2025_a_comprehensive_survey_of_self",
+      "target": "gap:self-evolving-video-agent",
+      "relation": "informs",
+      "evidence": "综述系统梳理了自进化 Agent 技术，指出静态配置的局限性",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:ouyang2026_skillos_learning_skill_curatio",
+      "target": "gap:self-evolving-video-agent",
+      "relation": "informs",
+      "evidence": "SkillOS 实现了 skill 的自选与进化，但未应用于视频理解领域",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:zhang2026_memskill_learning_and_evolving",
+      "target": "gap:self-evolving-video-agent",
+      "relation": "informs",
+      "evidence": "MemSkill 实现了记忆技能的进化，但未应用于视频理解领域",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:lee2025_video_skill_cot_skill_based_ch",
+      "target": "gap:self-evolving-video-agent",
+      "relation": "informs",
+      "evidence": "Video-Skill-CoT 使用 skill-aware CoT 但技能集固定不可进化",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:hu2025_mcts_rag_enhancing_retrieval_a",
+      "target": "gap:recursive-reasoning-for-retrieval",
+      "relation": "informs",
+      "evidence": "MCTS-RAG 将 MCTS 与 RAG 结合，是递归推理用于检索的代表性工作",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:jiapeng2024_tree_of_reviews_a_tree_based_d",
+      "target": "gap:recursive-reasoning-for-retrieval",
+      "relation": "informs",
+      "evidence": "Tree of Reviews 使用树结构进行多跳检索推理",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:pan2025_timesearch_hierarchical_video_",
+      "target": "paper:wang2024_videotree_adaptive_tree_based_",
+      "relation": "extends",
+      "evidence": "TimeSearch 在 VideoTree 的层级思想基础上引入 Spotlight+Reflection",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:pan2025_timesearch_r_adaptive_temporal",
+      "target": "paper:pan2025_timesearch_hierarchical_video_",
+      "relation": "extends",
+      "evidence": "TimeSearch-R 是 TimeSearch 的 RL 增强版本，同一作者团队",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:yang2024_vca_video_curious_agent_for_lo",
+      "target": "paper:wang2024_videotree_adaptive_tree_based_",
+      "relation": "extends",
+      "evidence": "VCA 同样使用树搜索结构探索视频，引入好奇心驱动机制",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:yin2025_videoarm_agentic_reasoning_ove",
+      "target": "paper:wang2024_videotree_adaptive_tree_based_",
+      "relation": "extends",
+      "evidence": "VideoARM 继承层级思想，从树结构扩展到层级记忆+自主推理",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:yin2026_hierarchical_long_video_unders",
+      "target": "paper:wang2024_videotree_adaptive_tree_based_",
+      "relation": "extends",
+      "evidence": "HAVEN 继承层级视频索引思想，增加音视频实体聚合",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:zuo2025_videolucy_deep_memory_backtrac",
+      "target": "paper:wang2024_videotree_adaptive_tree_based_",
+      "relation": "extends",
+      "evidence": "VideoLucy 使用层级记忆结构进行粗到细回溯，继承层级思想",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:ren2025_videorag_retrieval_augmented_g",
+      "target": "paper:luo2024_video_rag_visually_aligned_ret",
+      "relation": "extends",
+      "evidence": "VideoRAG 扩展 Video-RAG 的 RAG 思想到超长视频，引入图结构知识",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:hu2025_mcts_rag_enhancing_retrieval_a",
+      "target": "paper:jiapeng2024_tree_of_reviews_a_tree_based_d",
+      "relation": "extends",
+      "evidence": "MCTS-RAG 用 MCTS 替代简单的树检索，在 RAG 中引入结构化推理",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:ouyang2026_skillos_learning_skill_curatio",
+      "target": "paper:zhang2026_memskill_learning_and_evolving",
+      "relation": "informs",
+      "evidence": "SkillOS（skill 自选）与 MemSkill（记忆技能进化）互补，共同构成自进化 Agent 的技能层",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:lee2025_video_skill_cot_skill_based_ch",
+      "target": "paper:ouyang2026_skillos_learning_skill_curatio",
+      "relation": "informs",
+      "evidence": "Video-Skill-CoT 的 skill 分解思想与 SkillOS 的 skill 自选机制相关",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:wang2025_active_video_perception_iterat",
+      "target": "paper:zhang2025_deep_video_discovery_agentic_s",
+      "relation": "extends",
+      "evidence": "AVP 在 DVD 的 agentic search 基础上引入主动感知，用 query-agnostic→query-aware",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:yin2025_videoarm_agentic_reasoning_ove",
+      "target": "paper:zhang2025_deep_video_discovery_agentic_s",
+      "relation": "extends",
+      "evidence": "VideoARM 在 DVD 的 agentic search 基础上增加层级记忆构建",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:zuo2025_videolucy_deep_memory_backtrac",
+      "target": "paper:zhang2025_deep_video_discovery_agentic_s",
+      "relation": "extends",
+      "evidence": "VideoLucy 在 DVD 的 agentic search 基础上增加层级记忆回溯",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:li2026_videothinker_building_agentic_",
+      "target": "paper:zhang2025_deep_video_discovery_agentic_s",
+      "relation": "extends",
+      "evidence": "VideoThinker 在 DVD 的 agentic search 基础上增加工具推理训练",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "paper:chen2025_lvagent_long_video_understandi",
+      "target": "paper:zhang2025_deep_video_discovery_agentic_s",
+      "relation": "informs",
+      "evidence": "LVAgent 的多 Agent 协作与 DVD 的单 Agent 搜索形成对比",
+      "added": "2026-05-24T12:00:00+00:00"
+    },
+    {
+      "source": "plan:llm-asr-client",
+      "target": "design:llm-asr-client",
+      "relation": "implements",
+      "evidence": "实现设计文档中的 LLMClient + ASRClient 双模块方案",
+      "added": "2026-05-25T07:51:50.828426+00:00"
+    },
+    {
+      "source": "design:workspace-store",
+      "target": "idea:videotree-evolve",
+      "relation": "refines",
+      "evidence": "Workspace+Store 架构为自我进化循环提供资源版本管理和实验隔离基础设施",
+      "added": "2026-05-25T12:58:04.994091+00:00"
+    },
+    {
+      "source": "plan:workspace-store",
+      "target": "design:workspace-store",
+      "relation": "implements",
+      "evidence": "实现 Workspace+Store 设计文档中定义的全部函数接口和目录结构",
+      "added": "2026-05-25T13:03:20.883190+00:00"
+    },
+    {
+      "source": "design:agent-tools",
+      "target": "idea:videotree-evolve",
+      "relation": "refines",
+      "evidence": "实现搜索 Agent 的工具层，包含 5 个树搜索工具和 Thinking+JSON 调用机制",
+      "added": "2026-05-25T15:35:34.407788+00:00"
+    },
+    {
+      "source": "design:agent-tools",
+      "target": "design:workspace-store",
+      "relation": "depends_on",
+      "evidence": "工具层依赖 Store/Workspace 的路径系统（ResolvedPaths）获取视频树、Skills、Prompts 路径",
+      "added": "2026-05-25T15:35:40.812642+00:00"
+    },
+    {
+      "source": "plan:agent-tools",
+      "target": "design:agent-tools",
+      "relation": "implements",
+      "evidence": "实现搜索 Agent 工具层设计：5 个工具 + Thinking+JSON 调用机制",
+      "added": "2026-05-25T15:50:07.457157+00:00"
+    },
+    {
+      "source": "design:2026-05-25-data-structures",
+      "target": "idea:videotree-evolve",
+      "relation": "refines",
+      "evidence": "数据结构层是 VideoTree-Evolve 自我进化循环的基础设施",
+      "added": "2026-05-26T01:27:52.800439+00:00"
+    },
+    {
+      "source": "plan:2026-05-25-data-structures",
+      "target": "design:2026-05-25-data-structures",
+      "relation": "implements",
+      "evidence": "实现数据结构层设计中定义的全部 dataclass",
+      "added": "2026-05-26T01:33:45.973481+00:00"
+    },
+    {
+      "source": "design:agent-loop",
+      "target": "idea:videotree-evolve",
+      "relation": "refines",
+      "evidence": "AgentLoop 是 VideoTree-Evolve 推理阶段的核心引擎",
+      "added": "2026-05-26T02:17:25.928529+00:00"
+    },
+    {
+      "source": "plan:agent-loop",
+      "target": "design:agent-loop",
+      "relation": "implements",
+      "evidence": "实现 AgentLoop 设计文档中的 Thinking+JSON 推理循环",
+      "added": "2026-05-26T02:22:56.049898+00:00"
+    },
+    {
+      "source": "plan:prompt-manager-plan",
+      "target": "design:prompt-manager",
+      "relation": "implements",
+      "evidence": "实现 prompt-manager 设计文档中定义的 PromptManager 类和 system.md 迁移",
+      "added": "2026-05-26T03:17:41.516514+00:00"
+    },
+    {
+      "source": "design:2026-05-26-inference-step",
+      "target": "idea:videotree-evolve",
+      "relation": "refines",
+      "evidence": "实现训练循环的 forward() 步骤",
+      "added": "2026-05-26T04:24:58.728205+00:00"
+    }
+  ]
+}
