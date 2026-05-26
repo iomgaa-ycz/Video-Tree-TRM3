@@ -1,0 +1,56 @@
+# core/harness/runner.py
+"""实验运行器，对标 PyTorch Trainer。"""
+
+from __future__ import annotations
+
+from loguru import logger
+
+from core.harness.config import RunConfig
+from core.harness.inference import InferenceResult, run_inference
+from core.harness.question_gen import load_benchmark
+from core.workspace import ResolvedPaths, resolve_paths
+
+
+class Runner:
+    """实验运行器，通过 RunConfig 驱动不同阶段。
+
+    参数:
+        config: 运行配置。
+    """
+
+    def __init__(self, config: RunConfig) -> None:
+        self._config = config
+        self._paths: ResolvedPaths = resolve_paths(config.workspace_dir)
+
+    def infer(self) -> InferenceResult:
+        """执行单次推理（forward-only）。
+
+        加载 benchmark 题目，可选截取前 n_samples 条，
+        调用 run_inference 执行 Agent 推理并返回聚合结果。
+
+        返回:
+            InferenceResult 冻结实例。
+        """
+        questions = load_benchmark(self._paths.questions_dir)
+        if self._config.n_samples > 0:
+            questions = questions[: self._config.n_samples]
+
+        logger.info(
+            "启动推理: {} 道题, concurrency={}, max_steps={}, skill_mode={}",
+            len(questions),
+            self._config.concurrency,
+            self._config.max_steps,
+            self._config.skill_mode,
+        )
+
+        return run_inference(
+            workspace_dir=self._config.workspace_dir,
+            questions=questions,
+            concurrency=self._config.concurrency,
+            max_steps=self._config.max_steps,
+            skill_mode=self._config.skill_mode,
+        )
+
+    def train(self) -> None:
+        """多轮训练循环：infer → diagnose → evolve。"""
+        raise NotImplementedError("train() 尚未实现")
