@@ -8,9 +8,9 @@ from pathlib import Path
 
 import yaml
 
-_VALID_MODES = {'infer', 'train'}
-_VALID_SKILL_MODES = {'auto', 'manual', 'none'}
-_PATH_FIELDS = {'workspace_dir', 'store_dir'}
+_VALID_MODES = {"infer", "train"}
+_VALID_SKILL_MODES = {"auto", "manual", "none"}
+_PATH_FIELDS = {"workspace_dir", "store_dir"}
 
 
 @dataclass(frozen=True)
@@ -54,19 +54,19 @@ def _validate(config: RunConfig) -> None:
         ValueError: 字段值不合法。
     """
     if config.mode not in _VALID_MODES:
-        raise ValueError(f'mode 必须为 {_VALID_MODES} 之一，实际: {config.mode!r}')
+        raise ValueError(f"mode 必须为 {_VALID_MODES} 之一，实际: {config.mode!r}")
     if config.skill_mode not in _VALID_SKILL_MODES:
         raise ValueError(
-            f'skill_mode 必须为 {_VALID_SKILL_MODES} 之一，实际: {config.skill_mode!r}'
+            f"skill_mode 必须为 {_VALID_SKILL_MODES} 之一，实际: {config.skill_mode!r}"
         )
     if config.concurrency <= 0:
-        raise ValueError(f'concurrency 必须 > 0，实际: {config.concurrency}')
+        raise ValueError(f"concurrency 必须 > 0，实际: {config.concurrency}")
     if config.max_steps <= 0:
-        raise ValueError(f'max_steps 必须 > 0，实际: {config.max_steps}')
+        raise ValueError(f"max_steps 必须 > 0，实际: {config.max_steps}")
     if config.n_samples < 0:
-        raise ValueError(f'n_samples 必须 >= 0，实际: {config.n_samples}')
+        raise ValueError(f"n_samples 必须 >= 0，实际: {config.n_samples}")
     if config.epochs <= 0:
-        raise ValueError(f'epochs 必须 > 0，实际: {config.epochs}')
+        raise ValueError(f"epochs 必须 > 0，实际: {config.epochs}")
 
 
 def load_config(yaml_path: Path, cli_overrides: dict) -> RunConfig:
@@ -79,7 +79,7 @@ def load_config(yaml_path: Path, cli_overrides: dict) -> RunConfig:
     返回:
         构造并校验后的 RunConfig 实例。
     """
-    with open(yaml_path, encoding='utf-8') as f:
+    with open(yaml_path, encoding="utf-8") as f:
         yaml_data: dict = yaml.safe_load(f)
 
     valid_fields = {f.name for f in dataclasses.fields(RunConfig)}

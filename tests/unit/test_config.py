@@ -5,26 +5,26 @@ from pathlib import Path
 import pytest
 import yaml
 
-from core.harness.config import RunConfig, load_config
+from core.harness.config import load_config
 
 
 @pytest.fixture()
 def yaml_file(tmp_path: Path) -> Path:
     """创建临时 YAML 配置文件。"""
     data = {
-        'workspace_dir': 'workspaces/default',
-        'store_dir': 'store',
-        'mode': 'infer',
-        'concurrency': 12,
-        'max_steps': 15,
-        'skill_mode': 'auto',
-        'n_samples': 0,
-        'questions': 'benchmarks/Video-MME',
-        'skills_version': 'v1',
-        'prompts_version': 'v1',
-        'epochs': 1,
+        "workspace_dir": "workspaces/default",
+        "store_dir": "store",
+        "mode": "infer",
+        "concurrency": 12,
+        "max_steps": 15,
+        "skill_mode": "auto",
+        "n_samples": 0,
+        "questions": "benchmarks/Video-MME",
+        "skills_version": "v1",
+        "prompts_version": "v1",
+        "epochs": 1,
     }
-    p = tmp_path / 'test_config.yaml'
+    p = tmp_path / "test_config.yaml"
     p.write_text(yaml.dump(data))
     return p
 
@@ -36,27 +36,27 @@ class TestLoadConfig:
         """纯 YAML 加载，无 CLI 覆盖。"""
         config = load_config(yaml_file, cli_overrides={})
         assert config.concurrency == 12
-        assert config.mode == 'infer'
+        assert config.mode == "infer"
         assert config.max_steps == 15
-        assert config.skill_mode == 'auto'
+        assert config.skill_mode == "auto"
         assert config.n_samples == 0
-        assert config.questions == 'benchmarks/Video-MME'
-        assert config.skills_version == 'v1'
-        assert config.prompts_version == 'v1'
+        assert config.questions == "benchmarks/Video-MME"
+        assert config.skills_version == "v1"
+        assert config.prompts_version == "v1"
         assert config.epochs == 1
 
     def test_cli_overrides_yaml(self, yaml_file: Path) -> None:
         """CLI 参数覆盖 YAML 值。"""
-        overrides = {'concurrency': 4, 'n_samples': 30, 'mode': 'train'}
+        overrides = {"concurrency": 4, "n_samples": 30, "mode": "train"}
         config = load_config(yaml_file, cli_overrides=overrides)
         assert config.concurrency == 4
         assert config.n_samples == 30
-        assert config.mode == 'train'
+        assert config.mode == "train"
         assert config.max_steps == 15
 
     def test_none_overrides_ignored(self, yaml_file: Path) -> None:
         """CLI 中为 None 的字段不覆盖 YAML 值。"""
-        overrides = {'concurrency': None, 'n_samples': None}
+        overrides = {"concurrency": None, "n_samples": None}
         config = load_config(yaml_file, cli_overrides=overrides)
         assert config.concurrency == 12
         assert config.n_samples == 0
@@ -69,7 +69,7 @@ class TestLoadConfig:
 
     def test_config_key_not_in_yaml(self, yaml_file: Path) -> None:
         """CLI 传入非法 key 时，仅使用 YAML 中存在的字段。"""
-        overrides = {'config': 'some/path.yaml', 'unknown_field': 42}
+        overrides = {"config": "some/path.yaml", "unknown_field": 42}
         config = load_config(yaml_file, cli_overrides=overrides)
         assert config.concurrency == 12
 
@@ -79,15 +79,15 @@ class TestRunConfigValidation:
 
     def test_invalid_mode(self, yaml_file: Path) -> None:
         """非法 mode 值应报错。"""
-        with pytest.raises(ValueError, match='mode'):
-            load_config(yaml_file, cli_overrides={'mode': 'invalid'})
+        with pytest.raises(ValueError, match="mode"):
+            load_config(yaml_file, cli_overrides={"mode": "invalid"})
 
     def test_invalid_skill_mode(self, yaml_file: Path) -> None:
         """非法 skill_mode 值应报错。"""
-        with pytest.raises(ValueError, match='skill_mode'):
-            load_config(yaml_file, cli_overrides={'skill_mode': 'wrong'})
+        with pytest.raises(ValueError, match="skill_mode"):
+            load_config(yaml_file, cli_overrides={"skill_mode": "wrong"})
 
     def test_negative_concurrency(self, yaml_file: Path) -> None:
         """concurrency <= 0 应报错。"""
-        with pytest.raises(ValueError, match='concurrency'):
-            load_config(yaml_file, cli_overrides={'concurrency': 0})
+        with pytest.raises(ValueError, match="concurrency"):
+            load_config(yaml_file, cli_overrides={"concurrency": 0})
