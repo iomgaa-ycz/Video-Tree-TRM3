@@ -116,3 +116,57 @@ class SkillRegistry:
 
         logger.debug("读取技能文件: name={}, path={}", name, path)
         return strip_frontmatter(path.read_text(encoding="utf-8"))
+
+
+def discover_skills(
+    skills_dir: Path,
+) -> tuple[str, dict[str, str], str, SkillRegistry]:
+    """扫描 skills 目录，按 frontmatter 分类返回。
+
+    遍历 *.md 文件，根据 frontmatter 的 always/task_type 字段分类：
+    - always=true 的 skill 拼入 always_skills_text
+    - 有 task_type 的 skill 加入 task_skill_map
+    - 非 always 的 skill 生成 catalog_text 并注册到 registry
+
+    参数:
+        skills_dir: Skill 文件目录。
+
+    返回:
+        (always_skills_text, task_skill_map, catalog_text, registry) 四元组。
+    """
+    if not skills_dir.exists():
+        return "", {}, "", SkillRegistry()
+
+    always_parts: list[str] = []
+    task_skill_map: dict[str, str] = {}
+    catalog_lines: list[str] = []
+    registry_paths: dict[str, Path] = {}
+
+    for path in sorted(skills_dir.glob("*.md")):
+        raw = path.read_text(encoding="utf-8")
+        meta = parse_frontmatter(raw)
+        if "name" not in meta:
+            logger.warning("跳过无 name 的 skill 文件: {}", path)
+            continue
+
+        body = strip_frontmatter(raw)
+        name = meta["name"]
+        desc = meta.get("description", "")
+        task_type = meta.get("task_type", "")
+        is_always = str(meta.get("always", "false")).lower() == "true"
+
+        if is_always:
+            always_parts.append(body)
+        else:
+            if task_type:
+                task_skill_map[task_type] = body
+            catalog_lines.append(f"- **{name}**: {desc}")
+            registry_paths[name] = path
+
+    always_text = "\n\n---\n\n".join(always_parts)
+    catalog_text = "\n".join(catalog_lines)
+
+    registry = SkillRegistry()
+    registry.set_paths(registry_paths)
+
+    return always_text, task_skill_map, catalog_text, registry
