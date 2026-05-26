@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import json
 import re
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -14,8 +17,10 @@ from core.harness.question_gen import GeneratedQuestion
 from core.llm_client import LLMClient
 from core.loop import AgentLoop, LoopResult, Step, hookimpl
 from core.search.prompt import PromptManager
-from core.search.skills import SkillRegistry
+from core.search.skills import SkillRegistry, discover_skills
+from core.tree.environment import TreeEnvironment
 from core.tree.tools import dispatch
+from core.workspace import record_run, resolve_paths
 
 
 @dataclass(frozen=True)
@@ -194,3 +199,206 @@ def _run_single_question(
 
     log.insert("predictions", record)
     return record
+
+
+_PREDICTIONS_SCHEMA = {
+    "video_id": "TEXT",
+    "question_id": "TEXT",
+    "task_type": "TEXT",
+    "prediction": "TEXT",
+    "answer": "TEXT",
+    "evidence": "TEXT",
+    "reasoning": "TEXT",
+    "steps_used": "INTEGER",
+    "prompt_tokens": "INTEGER",
+    "completion_tokens": "INTEGER",
+    "stop_reason": "TEXT",
+    "steps_json": "JSON",
+}
+
+_TRACES_SCHEMA = {
+    "video_id": "TEXT",
+    "question_id": "TEXT",
+    "step": "INTEGER",
+    "tool_name": "TEXT",
+    "tool_args": "JSON",
+    "tool_output": "TEXT",
+    "thought": "TEXT",
+}
+
+_VALIDATION_FLAGS_SCHEMA = {
+    "video_id": "TEXT",
+    "question_id": "TEXT",
+    "has_l3_visit": "INTEGER",
+    "l1_count": "INTEGER",
+    "l2_count": "INTEGER",
+    "l3_count": "INTEGER",
+}
+
+
+def _aggregate_results(log: HarnessLog, run_id: str) -> InferenceResult:
+    """从 predictions 表聚合推理指标。
+
+    参数:
+        log: HarnessLog 实例。
+        run_id: 当前 run ID。
+
+    返回:
+        InferenceResult 冻结实例。
+    """
+    rows = log.query("SELECT * FROM predictions WHERE run_id = ?", (run_id,))
+
+    total = len(rows)
+    if total == 0:
+        return InferenceResult(
+            run_id=run_id,
+            accuracy=0.0,
+            total=0,
+            correct=0,
+            per_task_type={},
+            steps_mean=0.0,
+            token_usage={"prompt_tokens": 0, "completion_tokens": 0},
+            stop_reason_counts={},
+        )
+
+    correct = sum(1 for r in rows if r["prediction"] == r["answer"])
+    steps_total = sum(r["steps_used"] for r in rows)
+    prompt_total = sum(r["prompt_tokens"] for r in rows)
+    completion_total = sum(r["completion_tokens"] for r in rows)
+
+    stop_counts: dict[str, int] = defaultdict(int)
+    for r in rows:
+        stop_counts[r["stop_reason"]] += 1
+
+    task_groups: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        task_groups[r["task_type"]].append(r)
+
+    per_task_type = {}
+    for task_type, group in task_groups.items():
+        t_total = len(group)
+        t_correct = sum(1 for r in group if r["prediction"] == r["answer"])
+        per_task_type[task_type] = {
+            "accuracy": t_correct / t_total if t_total > 0 else 0.0,
+            "total": t_total,
+            "correct": t_correct,
+        }
+
+    return InferenceResult(
+        run_id=run_id,
+        accuracy=correct / total,
+        total=total,
+        correct=correct,
+        per_task_type=per_task_type,
+        steps_mean=steps_total / total,
+        token_usage={
+            "prompt_tokens": prompt_total,
+            "completion_tokens": completion_total,
+        },
+        stop_reason_counts=dict(stop_counts),
+    )
+
+
+def run_inference(
+    workspace_dir: Path,
+    questions: list[GeneratedQuestion],
+    concurrency: int,
+    max_steps: int,
+    skill_mode: str,
+) -> InferenceResult:
+    """在视频树上执行 Agent 推理，对应训练循环的 forward()。
+
+    参数:
+        workspace_dir: Workspace 根目录。
+        questions: 待推理的题目列表（已筛选）。
+        concurrency: 最大并行 worker 数。
+        max_steps: AgentLoop 单题最大步数。
+        skill_mode: "auto" / "manual" / "none"。
+
+    返回:
+        InferenceResult（含 accuracy、per_task_type 等聚合指标）。
+    """
+    paths = resolve_paths(workspace_dir)
+    run_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    record_run(workspace_dir, run_id)
+
+    config_snapshot = {
+        "concurrency": concurrency,
+        "max_steps": max_steps,
+        "skill_mode": skill_mode,
+        "total_questions": len(questions),
+    }
+
+    with HarnessLog(str(paths.db_path), run_id, config_snapshot=config_snapshot) as log:
+        log.create_table("predictions", _PREDICTIONS_SCHEMA)
+        log.create_table("traces", _TRACES_SCHEMA)
+        log.create_table("validation_flags", _VALIDATION_FLAGS_SCHEMA)
+
+        if not questions:
+            return _aggregate_results(log, run_id)
+
+        prompt_mgr = PromptManager(paths.prompts_dir)
+        always_text, task_skill_map, catalog_text, skill_registry = discover_skills(
+            paths.skills_dir
+        )
+
+        video_ids = {qa.video_id for qa in questions}
+        tool_client = LLMClient.from_env("SEARCH_LLM", thinking=False)
+        vl_client = LLMClient.from_env("VL_LLM", thinking=False)
+
+        video_envs: dict[str, TreeEnvironment] = {}
+        for vid in video_ids:
+            tree_path = paths.videos_dir / vid / "tree.json"
+            video_envs[vid] = TreeEnvironment(tree_path, tool_client, paths.prompts_dir)
+
+        done_count = 0
+        total_count = len(questions)
+
+        def _worker(qa: GeneratedQuestion) -> dict[str, Any]:
+            return _run_single_question(
+                qa=qa,
+                env=video_envs[qa.video_id],
+                vl_client=vl_client,
+                prompt_mgr=prompt_mgr,
+                skill_registry=skill_registry,
+                log=log,
+                max_steps=max_steps,
+                skill_mode=skill_mode,
+                always_skills_text=always_text,
+                task_skill_map=task_skill_map,
+                catalog_text=catalog_text,
+                prompts_dir=paths.prompts_dir,
+            )
+
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            futures = {pool.submit(_worker, qa): qa for qa in questions}
+            for future in as_completed(futures):
+                qa = futures[future]
+                done_count += 1
+                try:
+                    future.result()
+                    logger.info(
+                        "[{}/{}] {} QA {} 完成",
+                        done_count,
+                        total_count,
+                        qa.video_id,
+                        qa.question_id,
+                    )
+                except Exception:
+                    logger.exception(
+                        "[{}/{}] {} QA {} 失败",
+                        done_count,
+                        total_count,
+                        qa.video_id,
+                        qa.question_id,
+                    )
+
+        result = _aggregate_results(log, run_id)
+
+    logger.info(
+        "推理完成: accuracy={:.2%} ({}/{})",
+        result.accuracy,
+        result.correct,
+        result.total,
+    )
+    return result

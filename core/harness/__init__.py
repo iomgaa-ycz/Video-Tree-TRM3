@@ -7,7 +7,7 @@ from core.harness.evolve import (
     TargetSuggestionSet,
     ValidationResult,
 )
-from core.harness.inference import InferenceResult
+from core.harness.inference import InferenceResult, TracePlugin, run_inference
 from core.harness.log import HarnessLog
 from core.harness.question_gen import (
     GeneratedQuestion,
@@ -22,7 +22,9 @@ __all__ = [
     "GeneratedQuestion",
     "HarnessLog",
     "InferenceResult",
+    "TracePlugin",
     "load_benchmark",
+    "run_inference",
     "QuestionDiagnosis",
     "QuestionGenResult",
     "SpanEvaluation",

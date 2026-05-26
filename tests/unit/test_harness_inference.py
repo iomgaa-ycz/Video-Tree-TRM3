@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+import json
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from core.harness.inference import InferenceResult, TracePlugin, _run_single_question
+from core.harness.inference import (
+    InferenceResult,
+    TracePlugin,
+    _run_single_question,
+    run_inference,
+)
 from core.harness.log import HarnessLog
 from core.harness.question_gen import GeneratedQuestion
 from core.loop import LoopResult, Step
+from core.workspace import init_workspace
 
 
 def _make_step(tool_name: str, node_id: str = "") -> Step:
@@ -258,3 +265,127 @@ def test_run_single_question_error(
     assert len(rows) == 1
     assert rows[0]["stop_reason"] == "error"
     log.close()
+
+
+# ---------------------------------------------------------------------------
+# run_inference 测试
+# ---------------------------------------------------------------------------
+
+
+def _setup_workspace(tmp_path: Path) -> tuple[Path, Path]:
+    """创建最小 store + workspace 用于测试。"""
+    store = tmp_path / "store"
+    store.mkdir()
+    (store / "videos").mkdir()
+    vid_dir = store / "videos" / "vid-1"
+    vid_dir.mkdir()
+    tree_data = {
+        "video_id": "vid-1",
+        "videoID": "vid-1",
+        "duration_category": "short",
+        "duration_seconds": 60.0,
+        "domain": "test",
+        "built_at": "2026-01-01",
+        "build_stats": {},
+        "failures": [],
+        "nodes": {
+            "vid-1_L1_000": {
+                "node_id": "vid-1_L1_000",
+                "level": 1,
+                "time_range": [0.0, 60.0],
+                "parent_id": None,
+                "children_ids": [],
+                "card": {"scene_summary": "A test scene"},
+                "subtitle": "",
+            }
+        },
+    }
+    (vid_dir / "tree.json").write_text(json.dumps(tree_data))
+
+    skills_dir = store / "skills" / "v1"
+    skills_dir.mkdir(parents=True)
+    (skills_dir / "meta.json").write_text(
+        '{"version":"v1","source":"manual","created_at":"2026-01-01"}'
+    )
+
+    prompts_dir = store / "prompts" / "v1"
+    prompts_dir.mkdir(parents=True)
+    (prompts_dir / "system.md").write_text("You are a test agent.")
+    (prompts_dir / "meta.json").write_text(
+        '{"version":"v1","source":"manual","created_at":"2026-01-01"}'
+    )
+
+    questions_dir = store / "questions" / "benchmarks" / "test"
+    questions_dir.mkdir(parents=True)
+
+    ws = tmp_path / "ws"
+    init_workspace(ws, store, "benchmarks/test", "v1", "v1")
+
+    return ws, store
+
+
+@patch("core.harness.inference.TreeEnvironment")
+@patch("core.harness.inference.AgentLoop")
+@patch("core.harness.inference.LLMClient")
+def test_run_inference_basic(
+    mock_llm: MagicMock,
+    mock_loop_cls: MagicMock,
+    mock_env_cls: MagicMock,
+    tmp_path: Path,
+) -> None:
+    """基础编排：单题推理，验证 InferenceResult 结构。"""
+    ws, _ = _setup_workspace(tmp_path)
+
+    mock_llm.from_env.return_value = MagicMock()
+    mock_loop_cls.return_value.run.return_value = LoopResult(
+        result={"answer": "A", "evidence": "saw it", "reasoning": "obvious"},
+        steps=[_make_step("submit_answer")],
+        steps_used=1,
+        token_usage={"prompt_tokens": 50, "completion_tokens": 20},
+        stop_reason="finished",
+    )
+    mock_env_instance = MagicMock()
+    mock_env_instance._nodes = {"vid-1_L1_000": {"level": 1, "children_ids": []}}
+    mock_env_cls.return_value = mock_env_instance
+
+    questions = [
+        GeneratedQuestion(
+            question_id="q-1",
+            video_id="vid-1",
+            task_type="Test",
+            question="What?",
+            options=["A. Yes", "B. No"],
+            answer="A",
+        )
+    ]
+
+    result = run_inference(
+        workspace_dir=ws,
+        questions=questions,
+        concurrency=1,
+        max_steps=15,
+        skill_mode="none",
+    )
+
+    assert result.run_id is not None
+    assert result.total == 1
+    assert result.correct == 1
+    assert result.accuracy == 1.0
+    assert result.stop_reason_counts == {"finished": 1}
+
+
+def test_run_inference_empty_questions(tmp_path: Path) -> None:
+    """空题目列表应直接返回零结果。"""
+    ws, _ = _setup_workspace(tmp_path)
+
+    result = run_inference(
+        workspace_dir=ws,
+        questions=[],
+        concurrency=1,
+        max_steps=15,
+        skill_mode="none",
+    )
+
+    assert result.total == 0
+    assert result.accuracy == 0.0
+    assert result.correct == 0
