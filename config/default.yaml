@@ -1,0 +1,19 @@
+# config/default.yaml
+# 全量默认参数，所有非敏感配置的唯一默认值来源。
+# 优先级: CLI args > 此文件。敏感信息（API key）在 .env 中管理。
+
+workspace_dir: workspaces/default
+store_dir: store
+
+mode: infer
+
+concurrency: 12
+max_steps: 15
+skill_mode: auto
+n_samples: 0
+
+questions: benchmarks/Video-MME
+skills_version: v1
+prompts_version: v1
+
+epochs: 1
