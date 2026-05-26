@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sqlite3
 import subprocess
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -48,7 +49,8 @@ class HarnessLog:
     ) -> None:
         self._run_id = run_id
         Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(db_path)
+        self._conn = sqlite3.connect(db_path, check_same_thread=False)
+        self._lock = threading.Lock()
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._init_fixed_tables()
@@ -131,8 +133,9 @@ class HarnessLog:
             )
         else:
             sql = f"INSERT INTO {table} ({col_names}) VALUES ({placeholders})"
-        self._conn.execute(sql, values)
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(sql, values)
+            self._conn.commit()
 
     def insert_many(
         self, table: str, records: list[dict[str, Any]], mode: str = "append"
@@ -154,8 +157,9 @@ class HarnessLog:
             sql: SQL 语句。
             params: 参数元组。
         """
-        self._conn.execute(sql, params)
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(sql, params)
+            self._conn.commit()
 
     def query(self, sql: str, params: tuple = ()) -> list[dict[str, Any]]:
         """执行原生 SQL 查询，返回 list[dict]。
@@ -178,16 +182,17 @@ class HarnessLog:
             event_type: 事件类型标识。
             payload: 事件数据。
         """
-        self._conn.execute(
-            "INSERT INTO _events (run_id, timestamp, event_type, payload) VALUES (?, ?, ?, ?)",
-            (
-                self._run_id,
-                _now_iso(),
-                event_type,
-                json.dumps(payload, ensure_ascii=False),
-            ),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO _events (run_id, timestamp, event_type, payload) VALUES (?, ?, ?, ?)",
+                (
+                    self._run_id,
+                    _now_iso(),
+                    event_type,
+                    json.dumps(payload, ensure_ascii=False),
+                ),
+            )
+            self._conn.commit()
 
     def close(self, status: str = "completed") -> None:
         """更新运行状态并关闭连接。
@@ -195,12 +200,13 @@ class HarnessLog:
         参数:
             status: 最终状态，"completed" 或 "failed"。
         """
-        self._conn.execute(
-            "UPDATE _runs SET finished_at = ?, status = ? WHERE run_id = ?",
-            (_now_iso(), status, self._run_id),
-        )
-        self._conn.commit()
-        self._conn.close()
+        with self._lock:
+            self._conn.execute(
+                "UPDATE _runs SET finished_at = ?, status = ? WHERE run_id = ?",
+                (_now_iso(), status, self._run_id),
+            )
+            self._conn.commit()
+            self._conn.close()
 
     def register_schema(self, wiki_dir: str) -> None:
         """将当前 db 中所有自定义表的 schema 导出注册到 Wiki。
