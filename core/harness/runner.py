@@ -1,4 +1,3 @@
-# core/harness/runner.py
 """实验运行器，对标 PyTorch Trainer。"""
 
 from __future__ import annotations
@@ -8,7 +7,7 @@ from loguru import logger
 from core.harness.config import RunConfig
 from core.harness.inference import InferenceResult, run_inference
 from core.harness.question_gen import load_benchmark
-from core.workspace import ResolvedPaths, resolve_paths
+from core.workspace import ResolvedPaths, init_workspace, resolve_paths
 
 
 class Runner:
@@ -20,7 +19,21 @@ class Runner:
 
     def __init__(self, config: RunConfig) -> None:
         self._config = config
+        self._ensure_workspace()
         self._paths: ResolvedPaths = resolve_paths(config.workspace_dir)
+
+    def _ensure_workspace(self) -> None:
+        """若 workspace 不存在则自动创建。"""
+        manifest = self._config.workspace_dir / "manifest.json"
+        if not manifest.exists():
+            logger.info("Workspace 不存在，自动创建: {}", self._config.workspace_dir)
+            init_workspace(
+                workspace_dir=self._config.workspace_dir,
+                store_dir=self._config.store_dir,
+                questions=self._config.questions,
+                skills_version=self._config.skills_version,
+                prompts_version=self._config.prompts_version,
+            )
 
     def infer(self) -> InferenceResult:
         """执行单次推理（forward-only）。
@@ -50,7 +63,3 @@ class Runner:
             max_steps=self._config.max_steps,
             skill_mode=self._config.skill_mode,
         )
-
-    def train(self) -> None:
-        """多轮训练循环：infer → diagnose → evolve。"""
-        raise NotImplementedError("train() 尚未实现")

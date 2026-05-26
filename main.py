@@ -8,6 +8,7 @@ from pathlib import Path
 from loguru import logger
 
 from core.harness.config import load_config
+from core.harness.inference import InferenceResult
 from core.harness.runner import Runner
 
 
@@ -46,8 +47,8 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _print_result(result) -> None:
-    """打印推理结果摘要。
+def _log_result(result: InferenceResult) -> None:
+    """输出推理结果摘要到日志。
 
     参数:
         result: InferenceResult 实例。
@@ -100,9 +101,10 @@ def main() -> None:
 
     if config.mode == "infer":
         result = runner.infer()
-        _print_result(result)
+        _log_result(result)
     elif config.mode == "train":
-        runner.train()
+        logger.error("train 模式尚未实现")
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

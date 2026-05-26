@@ -166,9 +166,14 @@ class TestRunnerInfer:
         called_questions = mock_fn.call_args[1]["questions"]
         assert len(called_questions) == 2
 
-    def test_train_not_implemented(self, workspace_env: dict[str, Path]) -> None:
-        """train() 应抛出 NotImplementedError。"""
-        config = _make_config(workspace_env, mode="train")
+
+class TestRunnerAutoWorkspace:
+    """Runner 自动创建 workspace 测试。"""
+
+    def test_auto_creates_workspace(self, workspace_env: dict[str, Path]) -> None:
+        """workspace 不存在时自动创建 manifest.json。"""
+        new_ws = workspace_env["workspace_dir"].parent / "auto_ws"
+        config = _make_config(workspace_env, workspace_dir=new_ws)
         runner = Runner(config)
-        with pytest.raises(NotImplementedError):
-            runner.train()
+        assert (new_ws / "manifest.json").exists()
+        assert runner._paths.workspace_dir == new_ws.resolve()
