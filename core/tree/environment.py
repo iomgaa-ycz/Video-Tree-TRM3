@@ -7,6 +7,7 @@ embedding 模型和向量索引延迟加载，首次 search_similar 时构建并
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -54,6 +55,7 @@ class TreeEnvironment:
         self._chunk_node_ids: list[str] | None = None
         self._embeddings: np.ndarray | None = None
         self._model: Any = None
+        self._embed_lock = threading.Lock()
 
     # ------------------------------------------------------------------
     # 内部文本提取
@@ -292,40 +294,44 @@ class TreeEnvironment:
         return self._model
 
     def _ensure_embeddings(self) -> None:
-        """延迟加载或生成 embedding 索引（支持 chunking）。"""
+        """延迟加载或生成 embedding 索引（支持 chunking，线程安全）。"""
         if self._embeddings is not None:
             return
 
-        cache_path = self._tree_dir / f"{self._video_id}.embeddings.npz"
+        with self._embed_lock:
+            if self._embeddings is not None:
+                return
 
-        if cache_path.exists():
-            data = np.load(cache_path, allow_pickle=True)
-            self._chunk_node_ids = data["chunk_node_ids"].tolist()
-            self._embeddings = data["embeddings"]
-            return
+            cache_path = self._tree_dir / f"{self._video_id}.embeddings.npz"
 
-        chunk_node_ids: list[str] = []
-        texts: list[str] = []
-        for nid, node in self._nodes.items():
-            full_text = self._node_full_text(node)
-            for chunk in self._chunk_text(full_text):
-                chunk_node_ids.append(nid)
-                texts.append(chunk)
+            if cache_path.exists():
+                data = np.load(cache_path, allow_pickle=True)
+                self._chunk_node_ids = data["chunk_node_ids"].tolist()
+                self._embeddings = data["embeddings"]
+                return
 
-        self._chunk_node_ids = chunk_node_ids
+            chunk_node_ids: list[str] = []
+            texts: list[str] = []
+            for nid, node in self._nodes.items():
+                full_text = self._node_full_text(node)
+                for chunk in self._chunk_text(full_text):
+                    chunk_node_ids.append(nid)
+                    texts.append(chunk)
 
-        model = self._get_model()
-        self._embeddings = model.encode(
-            texts,
-            show_progress_bar=True,
-            normalize_embeddings=True,
-        )
+            self._chunk_node_ids = chunk_node_ids
 
-        np.savez(
-            cache_path,
-            chunk_node_ids=np.array(self._chunk_node_ids),
-            embeddings=self._embeddings,
-        )
+            model = self._get_model()
+            self._embeddings = model.encode(
+                texts,
+                show_progress_bar=True,
+                normalize_embeddings=True,
+            )
+
+            np.savez(
+                cache_path,
+                chunk_node_ids=np.array(self._chunk_node_ids),
+                embeddings=self._embeddings,
+            )
 
     def search_similar(self, query: str, question: str, k: int = 5) -> str:
         """语义检索 top-k 节点，返回 question-conditioned 摘要。
