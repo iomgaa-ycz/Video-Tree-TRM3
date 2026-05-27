@@ -225,6 +225,16 @@
       "id": "plan:diagnose-pipeline",
       "label": "诊断流水线实现计划",
       "type": "plan"
+    },
+    {
+      "id": "design:case-pack",
+      "label": "诊断案例包与 Prompt 清理设计",
+      "type": "design"
+    },
+    {
+      "id": "plan:case-pack",
+      "label": "诊断案例包与 Prompt 清理实现计划",
+      "type": "plan"
     }
   ],
   "links": [
@@ -605,6 +615,20 @@
       "relation": "implements",
       "evidence": "实现设计文档中定义的两阶段诊断流水线",
       "added": "2026-05-27T08:45:27.522536+00:00"
+    },
+    {
+      "source": "design:case-pack",
+      "target": "design:diagnose-pipeline",
+      "relation": "extends",
+      "evidence": "案例包扩展诊断流水线，为进化模块提供具体案例输入",
+      "added": "2026-05-27T12:09:58.228205+00:00"
+    },
+    {
+      "source": "plan:case-pack",
+      "target": "design:case-pack",
+      "relation": "implements",
+      "evidence": "实现案例包设计的 10 个 task",
+      "added": "2026-05-27T12:16:25.837772+00:00"
     }
   ]
 }
