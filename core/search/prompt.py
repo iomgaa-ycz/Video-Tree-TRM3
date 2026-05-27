@@ -56,7 +56,9 @@ class PromptManager:
         if always_skills_text:
             parts.append(f"\n\n---\n\n# 通用搜索策略\n\n{always_skills_text}")
         if skill_mode == "auto":
-            skill_text = task_skill_map.get(task_type)
+            skill_text = task_skill_map.get(task_type) or task_skill_map.get(
+                "_default"
+            )
             if skill_text:
                 parts.append(f"\n\n---\n\n# 当前题型搜索策略\n\n{skill_text}")
         elif skill_mode == "manual":
