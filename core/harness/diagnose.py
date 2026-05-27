@@ -1471,6 +1471,33 @@ def run_diagnosis(
             },
         )
 
+    d2_stats = aggregate_d2(all_metrics)
+    d3_stats = aggregate_d3(all_metrics)
+    d4_stats = aggregate_d4(all_metrics)
+    d5_stats = aggregate_d5(all_metrics)
+
+    skill_packs = _build_skill_case_packs(
+        all_metrics=all_metrics,
+        error_attributions=error_attributions,
+        traces_by_question=traces_by_question,
+        predictions=normalized_predictions,
+        d3_stats=d3_stats,
+        d4_stats=d4_stats,
+    )
+    system_pack = _build_system_case_pack(
+        all_metrics=all_metrics,
+        traces_by_question=traces_by_question,
+        predictions=normalized_predictions,
+        d5_stats=d5_stats,
+    )
+    tool_packs = _build_tool_case_packs(
+        log=log,
+        run_id=run_id,
+        traces_by_question=traces_by_question,
+        d2_stats=d2_stats,
+        tree_cache=tree_cache,
+    )
+
     result = DiagnosisResult(
         run_id=run_id,
         filter_summary={
@@ -1485,10 +1512,13 @@ def run_diagnosis(
         error_attributions=error_attributions,
         attribution_distribution=attribution_distribution,
         reasoning_failure_types=reasoning_failure_types,
-        tool_quality=aggregate_d2(all_metrics),
-        search_effectiveness=aggregate_d3(all_metrics),
-        skill_compliance=aggregate_d4(all_metrics),
-        decision_patterns=aggregate_d5(all_metrics),
+        tool_quality=d2_stats,
+        search_effectiveness=d3_stats,
+        skill_compliance=d4_stats,
+        decision_patterns=d5_stats,
+        skill_case_packs=skill_packs,
+        system_case_pack=system_pack,
+        tool_case_packs=tool_packs,
     )
 
     output_path = Path(workspace_dir) / "analyses" / f"diagnosis_{run_id}.json"
