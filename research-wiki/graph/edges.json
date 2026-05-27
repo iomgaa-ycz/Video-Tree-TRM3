@@ -235,6 +235,11 @@
       "id": "plan:case-pack",
       "label": "诊断案例包与 Prompt 清理实现计划",
       "type": "plan"
+    },
+    {
+      "id": "design:evolution-module",
+      "label": "进化模块设计",
+      "type": "design"
     }
   ],
   "links": [
@@ -629,6 +634,20 @@
       "relation": "implements",
       "evidence": "实现案例包设计的 10 个 task",
       "added": "2026-05-27T12:16:25.837772+00:00"
+    },
+    {
+      "source": "design:evolution-module",
+      "target": "design:case-pack",
+      "relation": "depends_on",
+      "evidence": "进化模块的输入是案例包，案例包设计决定了进化的数据基础",
+      "added": "2026-05-27T14:30:49.271368+00:00"
+    },
+    {
+      "source": "design:evolution-module",
+      "target": "design:diagnose-pipeline",
+      "relation": "depends_on",
+      "evidence": "进化模块读取诊断管线的 DiagnosisResult 作为输入",
+      "added": "2026-05-27T14:30:50.467832+00:00"
     }
   ]
 }

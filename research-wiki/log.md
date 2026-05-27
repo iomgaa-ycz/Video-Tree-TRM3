@@ -96,3 +96,7 @@
 - [2026-05-27 12:16 UTC] 新增 plan: 诊断案例包与 Prompt 清理实现计划 (plan:case-pack)
 - [2026-05-27 12:16 UTC] 新增边: plan:case-pack --implements--> design:case-pack
 - [2026-05-27 12:16 UTC] 重建索引: 62 篇页面
+- [2026-05-27 14:29 UTC] 新增 design: 进化模块设计 (design:evolution-module)
+- [2026-05-27 14:30 UTC] 新增边: design:evolution-module --depends_on--> design:case-pack
+- [2026-05-27 14:30 UTC] 新增边: design:evolution-module --depends_on--> design:diagnose-pipeline
+- [2026-05-27 14:30 UTC] 重建索引: 64 篇页面
