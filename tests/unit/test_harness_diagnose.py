@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 from core.harness.diagnose import (
     CaseSample,
     DiagnosisResult,
@@ -12,6 +14,9 @@ from core.harness.diagnose import (
     SpanMetrics,
     SystemCasePack,
     ToolCasePack,
+    _build_skill_case_packs,
+    _build_system_case_pack,
+    _build_tool_case_packs,
     aggregate_d2,
     aggregate_d5,
     attribute_error,
@@ -404,3 +409,375 @@ def test_diagnosis_result_with_case_packs() -> None:
         result.skill_case_packs["Temporal Reasoning"].target_file
         == "temporal-reasoning.md"
     )
+
+
+# ---------------------------------------------------------------------------
+# 案例包构建函数测试
+# ---------------------------------------------------------------------------
+
+
+def test_build_skill_case_packs_basic() -> None:
+    """基本场景：2 个 error_type 各 2+ 题，应各取 top 2；成功案例按比例。"""
+    metrics = [
+        _make_question_metrics(
+            question_id="q_sf_1",
+            correct=False,
+            missed_nodes=["L2_a", "L2_b", "L3_c"],
+            budget_usage=1.0,
+            task_type="Temporal Reasoning",
+            skill_adherence=[SkillStepAdherence("s1", True, "ok")],
+        ),
+        _make_question_metrics(
+            question_id="q_sf_2",
+            correct=False,
+            missed_nodes=["L2_a", "L3_b"],
+            budget_usage=0.8,
+            task_type="Temporal Reasoning",
+            skill_adherence=[SkillStepAdherence("s1", True, "ok")],
+        ),
+        _make_question_metrics(
+            question_id="q_sf_3",
+            correct=False,
+            missed_nodes=["L3_a"],
+            budget_usage=0.6,
+            task_type="Temporal Reasoning",
+            skill_adherence=[SkillStepAdherence("s1", False, "no")],
+        ),
+        _make_question_metrics(
+            question_id="q_rf_1",
+            correct=False,
+            missed_nodes=[],
+            evidence_sufficient=True,
+            budget_usage=0.9,
+            confidence_calibration="high_conf_wrong",
+            task_type="Temporal Reasoning",
+            skill_adherence=[SkillStepAdherence("s1", True, "ok")],
+        ),
+        _make_question_metrics(
+            question_id="q_rf_2",
+            correct=False,
+            missed_nodes=[],
+            evidence_sufficient=True,
+            budget_usage=0.5,
+            confidence_calibration="calibrated",
+            task_type="Temporal Reasoning",
+            skill_adherence=[SkillStepAdherence("s1", True, "ok")],
+        ),
+        _make_question_metrics(
+            question_id="q_ok_1",
+            correct=True,
+            budget_usage=0.4,
+            task_type="Temporal Reasoning",
+            skill_adherence=[SkillStepAdherence("s1", True, "ok")],
+        ),
+        _make_question_metrics(
+            question_id="q_ok_2",
+            correct=True,
+            budget_usage=0.6,
+            task_type="Temporal Reasoning",
+            skill_adherence=[
+                SkillStepAdherence("s1", True, "ok"),
+                SkillStepAdherence("s2", False, "no"),
+            ],
+        ),
+        _make_question_metrics(
+            question_id="q_ok_3",
+            correct=True,
+            budget_usage=0.3,
+            task_type="Temporal Reasoning",
+            skill_adherence=[
+                SkillStepAdherence("s1", True, "ok"),
+                SkillStepAdherence("s2", True, "ok"),
+            ],
+        ),
+    ]
+    attributions = [
+        ErrorAttribution("q_sf_1", "search_failure", None),
+        ErrorAttribution("q_sf_2", "search_failure", None),
+        ErrorAttribution("q_sf_3", "search_failure", None),
+        ErrorAttribution("q_rf_1", "reasoning_failure", None),
+        ErrorAttribution("q_rf_2", "reasoning_failure", None),
+    ]
+    traces = {(m.video_id, m.question_id): [] for m in metrics}
+    predictions = [
+        {
+            "video_id": m.video_id,
+            "question_id": m.question_id,
+            "task_type": m.task_type,
+            "question": "Q?",
+            "options": ["A", "B", "C", "D"],
+            "answer": "A",
+            "prediction": "A" if m.correct else "B",
+        }
+        for m in metrics
+    ]
+
+    packs = _build_skill_case_packs(
+        all_metrics=metrics,
+        error_attributions=attributions,
+        traces_by_question=traces,
+        predictions=predictions,
+        d3_stats={},
+        d4_stats={},
+    )
+
+    assert "Temporal Reasoning" in packs
+    pack = packs["Temporal Reasoning"]
+
+    assert len(pack.failure_cases) == 4
+    failure_ids = [c.question_id for c in pack.failure_cases]
+    assert "q_sf_1" in failure_ids
+    assert "q_sf_2" in failure_ids
+    assert "q_rf_1" in failure_ids
+
+    assert len(pack.success_cases) == 2
+    success_ids = [c.question_id for c in pack.success_cases]
+    assert "q_ok_3" in success_ids
+
+
+def test_build_skill_case_packs_low_accuracy() -> None:
+    """accuracy <= 30% 时成功案例放宽标准。"""
+    metrics = []
+    attributions = []
+    for i in range(8):
+        m = _make_question_metrics(
+            question_id=f"q_wrong_{i}",
+            correct=False,
+            missed_nodes=["L2_x"] if i < 4 else [],
+            evidence_sufficient=(i >= 4),
+            task_type="OCR Problems",
+            skill_adherence=[],
+        )
+        metrics.append(m)
+        error_type = "search_failure" if i < 4 else "reasoning_failure"
+        attributions.append(ErrorAttribution(f"q_wrong_{i}", error_type, None))
+
+    for i in range(2):
+        metrics.append(
+            _make_question_metrics(
+                question_id=f"q_right_{i}",
+                correct=True,
+                task_type="OCR Problems",
+                skill_adherence=[],
+            )
+        )
+
+    traces = {(m.video_id, m.question_id): [] for m in metrics}
+    predictions = [
+        {
+            "video_id": m.video_id,
+            "question_id": m.question_id,
+            "task_type": m.task_type,
+            "question": "Q?",
+            "options": ["A", "B", "C", "D"],
+            "answer": "A",
+            "prediction": "A" if m.correct else "B",
+        }
+        for m in metrics
+    ]
+
+    packs = _build_skill_case_packs(
+        all_metrics=metrics,
+        error_attributions=attributions,
+        traces_by_question=traces,
+        predictions=predictions,
+        d3_stats={},
+        d4_stats={},
+    )
+
+    pack = packs["OCR Problems"]
+    assert len(pack.success_cases) >= 2
+    for case in pack.success_cases:
+        assert "low_accuracy_pool" in case.selection_reason
+
+
+def test_build_system_case_pack_basic() -> None:
+    """行为模式达到 min_pattern_count 时应产出案例。"""
+    metrics = []
+    for i in range(4):
+        metrics.append(
+            _make_question_metrics(
+                question_id=f"q_early_{i}",
+                correct=False,
+                budget_usage=0.1 + i * 0.05,
+                confidence_calibration="calibrated",
+                confirmation_bias=False,
+            )
+        )
+    for i in range(2):
+        metrics.append(
+            _make_question_metrics(
+                question_id=f"q_hcw_{i}",
+                correct=False,
+                budget_usage=0.7,
+                confidence_calibration="high_conf_wrong",
+                confirmation_bias=False,
+            )
+        )
+    for i in range(3):
+        metrics.append(
+            _make_question_metrics(
+                question_id=f"q_good_{i}",
+                correct=True,
+                budget_usage=0.45 + i * 0.05,
+                confidence_calibration="calibrated",
+                confirmation_bias=False,
+            )
+        )
+
+    traces = {(m.video_id, m.question_id): [] for m in metrics}
+    predictions = [
+        {
+            "video_id": m.video_id,
+            "question_id": m.question_id,
+            "task_type": m.task_type,
+            "question": "Q?",
+            "options": ["A", "B", "C", "D"],
+            "answer": "A",
+            "prediction": "A" if m.correct else "B",
+        }
+        for m in metrics
+    ]
+
+    pack = _build_system_case_pack(
+        all_metrics=metrics,
+        traces_by_question=traces,
+        predictions=predictions,
+        d5_stats={"early_submit_rate": 0.4},
+    )
+
+    assert pack is not None
+    assert len(pack.failure_cases) == 2
+    failure_ids = [c.question_id for c in pack.failure_cases]
+    assert failure_ids[0] == "q_early_0"
+    assert failure_ids[1] == "q_early_1"
+    assert len(pack.success_cases) >= 2
+
+
+def test_build_system_case_pack_returns_none() -> None:
+    """所有行为模式都不足阈值时应返回 None。"""
+    metrics = [
+        _make_question_metrics(question_id="q_1", correct=False, budget_usage=0.5),
+        _make_question_metrics(question_id="q_2", correct=True, budget_usage=0.5),
+    ]
+    traces = {(m.video_id, m.question_id): [] for m in metrics}
+    predictions = [
+        {
+            "video_id": m.video_id,
+            "question_id": m.question_id,
+            "task_type": m.task_type,
+            "question": "Q?",
+            "options": ["A", "B", "C", "D"],
+            "answer": "A",
+            "prediction": "A" if m.correct else "B",
+        }
+        for m in metrics
+    ]
+
+    pack = _build_system_case_pack(
+        all_metrics=metrics,
+        traces_by_question=traces,
+        predictions=predictions,
+        d5_stats={},
+    )
+    assert pack is None
+
+
+def test_build_tool_case_packs_basic() -> None:
+    """从 span_evaluations 和 traces 中抽取工具级案例。"""
+    mock_log = MagicMock()
+    mock_log.query.return_value = [
+        {
+            "video_id": "v1",
+            "question_id": "q1",
+            "step": 0,
+            "tool_name": "view_node",
+            "extraction_completeness": 0.3,
+            "hallucination_rate": 0.6,
+            "missed_tags_json": '["entity"]',
+            "hallucinated_tags_json": '["fabricated_action"]',
+        },
+        {
+            "video_id": "v1",
+            "question_id": "q1",
+            "step": 1,
+            "tool_name": "view_node",
+            "extraction_completeness": 0.5,
+            "hallucination_rate": 0.4,
+            "missed_tags_json": '["subtitle_quote"]',
+            "hallucinated_tags_json": "[]",
+        },
+        {
+            "video_id": "v1",
+            "question_id": "q2",
+            "step": 0,
+            "tool_name": "view_node",
+            "extraction_completeness": 0.95,
+            "hallucination_rate": 0.0,
+            "missed_tags_json": "[]",
+            "hallucinated_tags_json": "[]",
+        },
+    ]
+
+    traces_by_question = {
+        ("v1", "q1"): [
+            {
+                "step": 0,
+                "tool_name": "view_node",
+                "tool_args": '{"node_id": "L1_000", "question": "Q?"}',
+                "tool_output": "some output step 0",
+            },
+            {
+                "step": 1,
+                "tool_name": "view_node",
+                "tool_args": '{"node_id": "L2_001", "question": "Q?"}',
+                "tool_output": "some output step 1",
+            },
+        ],
+        ("v1", "q2"): [
+            {
+                "step": 0,
+                "tool_name": "view_node",
+                "tool_args": '{"node_id": "L1_001", "question": "Q?"}',
+                "tool_output": "good output",
+            },
+        ],
+    }
+
+    tree_cache = {
+        "v1": {
+            "nodes": {
+                "L1_000": {
+                    "card": {"scene_summary": "intro"},
+                    "level": 1,
+                    "time_range": [0, 300],
+                },
+                "L2_001": {
+                    "card": {"event_description": "event"},
+                    "level": 2,
+                    "time_range": [0, 30],
+                },
+                "L1_001": {
+                    "card": {"scene_summary": "outro"},
+                    "level": 1,
+                    "time_range": [300, 600],
+                },
+            }
+        },
+    }
+
+    packs = _build_tool_case_packs(
+        log=mock_log,
+        run_id="test_run",
+        traces_by_question=traces_by_question,
+        d2_stats={"view_node": {"avg_completeness": 0.58, "n_calls": 3}},
+        tree_cache=tree_cache,
+    )
+
+    assert "view_node" in packs
+    vn_pack = packs["view_node"]
+    assert vn_pack.tool_name == "view_node"
+    assert "view_node_extract.md" in vn_pack.target_files
+    assert len(vn_pack.failure_spans) >= 2
+    assert len(vn_pack.success_spans) >= 1
+    assert vn_pack.success_spans[0]["extraction_completeness"] == 0.95

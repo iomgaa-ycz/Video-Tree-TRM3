@@ -786,6 +786,505 @@ def aggregate_d5(all_metrics: list[QuestionMetrics]) -> dict[str, Any]:
     }
 
 
+# ---------------------------------------------------------------------------
+# 案例包构建
+# ---------------------------------------------------------------------------
+
+_SEVERITY_FNS: dict[str, Any] = {}
+
+_MIN_PATTERN_COUNT = 3
+
+_TOOL_TARGET_FILES = {
+    "view_node": [
+        "view_node_extract.md",
+        "view_node_verify.md",
+        "view_node_children_extract.md",
+        "view_node_children_verify.md",
+    ],
+    "search_similar": ["search_similar_extract.md", "search_similar_verify.md"],
+    "observe_frame": ["observe_frame_extract.md", "observe_frame_verify.md"],
+}
+
+
+def _calc_adherence_rate(adherence_list: list[SkillStepAdherence]) -> float:
+    """计算 skill adherence 率。空列表返回 0.0。"""
+    if not adherence_list:
+        return 0.0
+    adhered = sum(1 for s in adherence_list if s.adhered)
+    return adhered / len(adherence_list)
+
+
+def _severity_search_failure(qm: QuestionMetrics) -> tuple[int, float]:
+    """search_failure 严重度：(missed_nodes 数降序, budget_usage 降序)。"""
+    return (len(qm.missed_nodes), qm.budget_usage)
+
+
+def _severity_extraction_failure(qm: QuestionMetrics) -> tuple[float, float]:
+    """extraction_failure 严重度：(max hallucination 降序, 1-avg completeness 降序)。"""
+    max_hall = max((s.hallucination_rate for s in qm.span_metrics), default=0.0)
+    avg_comp = _mean([s.extraction_completeness for s in qm.span_metrics])
+    return (max_hall, 1.0 - avg_comp)
+
+
+def _severity_reasoning_failure(qm: QuestionMetrics) -> tuple[int, float]:
+    """reasoning_failure 严重度：(high_conf_wrong 优先, budget_usage 降序)。"""
+    is_high_conf = 1 if qm.confidence_calibration == "high_conf_wrong" else 0
+    return (is_high_conf, qm.budget_usage)
+
+
+def _severity_mixed(qm: QuestionMetrics) -> tuple[float, int]:
+    """mixed 严重度：(budget_usage 降序, missed_nodes 数降序)。"""
+    return (qm.budget_usage, len(qm.missed_nodes))
+
+
+_SEVERITY_FNS = {
+    "search_failure": _severity_search_failure,
+    "extraction_failure": _severity_extraction_failure,
+    "reasoning_failure": _severity_reasoning_failure,
+    "mixed": _severity_mixed,
+}
+
+
+def _make_case_sample(
+    qm: QuestionMetrics,
+    prediction: dict[str, Any],
+    trace: list[dict[str, Any]],
+    error_type: str | None,
+    selection_reason: str,
+) -> CaseSample:
+    """从 QuestionMetrics 和 prediction 构造 CaseSample。"""
+    return CaseSample(
+        question_id=qm.question_id,
+        video_id=qm.video_id,
+        task_type=qm.task_type,
+        question=prediction.get("question", ""),
+        options=prediction.get("options", []),
+        answer=prediction.get("answer", ""),
+        prediction=prediction.get("prediction"),
+        correct=qm.correct,
+        error_type=error_type,
+        selection_reason=selection_reason,
+        metrics={
+            "correct": qm.correct,
+            "error_type": error_type,
+            "budget_usage": qm.budget_usage,
+            "confidence_calibration": qm.confidence_calibration,
+            "repeat_visit_rate": qm.repeat_visit_rate,
+            "tool_usage": qm.tool_usage,
+            "missed_nodes": qm.missed_nodes,
+            "adherence_rate": _calc_adherence_rate(qm.skill_adherence),
+            "confirmation_bias": qm.confirmation_bias,
+            "evidence_sufficient": qm.evidence_sufficient,
+        },
+        trace=trace,
+    )
+
+
+def _build_skill_case_packs(
+    all_metrics: list[QuestionMetrics],
+    error_attributions: list[ErrorAttribution],
+    traces_by_question: dict[tuple[str, str], list[dict[str, Any]]],
+    predictions: list[dict[str, Any]],
+    d3_stats: dict[str, dict],
+    d4_stats: dict[str, dict],
+) -> dict[str, SkillCasePack]:
+    """按题型构建 Skill 案例包。
+
+    参数:
+        all_metrics: 全部题目的 Stage 1 指标。
+        error_attributions: 错题归因列表。
+        traces_by_question: (video_id, question_id) → trace 列表。
+        predictions: 归一化后的 prediction 字典列表。
+        d3_stats: D3 搜索有效性聚合。
+        d4_stats: D4 技能遵循聚合。
+
+    返回:
+        {task_type: SkillCasePack} 映射。
+    """
+    attribution_map: dict[str, ErrorAttribution] = {
+        a.question_id: a for a in error_attributions
+    }
+    prediction_map: dict[str, dict[str, Any]] = {
+        p["question_id"]: p for p in predictions
+    }
+    by_task: dict[str, list[QuestionMetrics]] = defaultdict(list)
+    for qm in all_metrics:
+        by_task[qm.task_type].append(qm)
+
+    packs: dict[str, SkillCasePack] = {}
+    for task_type, metrics_group in by_task.items():
+        target_file = task_type.lower().replace(" ", "-") + ".md"
+
+        # 失败案例：按 error_type 分组，每组按严重度取 top 2
+        wrong_by_error: dict[str, list[QuestionMetrics]] = defaultdict(list)
+        for qm in metrics_group:
+            if not qm.correct:
+                attr = attribution_map.get(qm.question_id)
+                et = attr.error_type if attr else "mixed"
+                wrong_by_error[et].append(qm)
+
+        failure_cases: list[CaseSample] = []
+        for error_type, wrong_group in wrong_by_error.items():
+            severity_fn = _SEVERITY_FNS.get(error_type, _severity_mixed)
+            sorted_group = sorted(wrong_group, key=severity_fn, reverse=True)
+            for qm in sorted_group[:2]:
+                trace = traces_by_question.get((qm.video_id, qm.question_id), [])
+                pred = prediction_map.get(qm.question_id, {})
+                sv = severity_fn(qm)
+                reason = f"error_type={error_type}, severity={sv}"
+                failure_cases.append(
+                    _make_case_sample(qm, pred, trace, error_type, reason)
+                )
+
+        # 成功案例：按 adherence 率降序 → budget_usage 升序
+        correct_group = [qm for qm in metrics_group if qm.correct]
+        n_correct = len(correct_group)
+        n_total = len(metrics_group)
+        accuracy = n_correct / n_total if n_total > 0 else 0.0
+
+        n_success = max(2, len(failure_cases) // 2)
+        low_accuracy = accuracy <= 0.3
+
+        if low_accuracy:
+            sorted_correct = sorted(correct_group, key=lambda qm: qm.budget_usage)
+        else:
+            sorted_correct = sorted(
+                correct_group,
+                key=lambda qm: (
+                    -_calc_adherence_rate(qm.skill_adherence),
+                    qm.budget_usage,
+                ),
+            )
+
+        success_cases: list[CaseSample] = []
+        for qm in sorted_correct[:n_success]:
+            trace = traces_by_question.get((qm.video_id, qm.question_id), [])
+            pred = prediction_map.get(qm.question_id, {})
+            adh = _calc_adherence_rate(qm.skill_adherence)
+            reason = f"adherence={adh:.2f}, budget_usage={qm.budget_usage:.2f}"
+            if low_accuracy:
+                reason += ", low_accuracy_pool"
+            success_cases.append(_make_case_sample(qm, pred, trace, None, reason))
+
+        # D1 按题型拆分 attribution_distribution
+        attr_dist: dict[str, int] = Counter(
+            attribution_map[qm.question_id].error_type
+            for qm in metrics_group
+            if not qm.correct and qm.question_id in attribution_map
+        )
+
+        stats: dict[str, Any] = {
+            "n_total": n_total,
+            "n_correct": n_correct,
+            "accuracy": accuracy,
+            "attribution_distribution": dict(attr_dist),
+        }
+        if task_type in d3_stats:
+            stats["correct_vs_incorrect"] = d3_stats[task_type]
+        if task_type in d4_stats:
+            stats["overall_adherence"] = d4_stats[task_type].get(
+                "overall_adherence", 0.0
+            )
+            stats["steps"] = d4_stats[task_type].get("steps", {})
+
+        packs[task_type] = SkillCasePack(
+            task_type=task_type,
+            target_file=target_file,
+            stats=stats,
+            failure_cases=failure_cases,
+            success_cases=success_cases,
+        )
+
+    return packs
+
+
+def _build_system_case_pack(
+    all_metrics: list[QuestionMetrics],
+    traces_by_question: dict[tuple[str, str], list[dict[str, Any]]],
+    predictions: list[dict[str, Any]],
+    d5_stats: dict[str, Any],
+) -> SystemCasePack | None:
+    """构建跨题型行为模式案例包。
+
+    参数:
+        all_metrics: 全部题目的 Stage 1 指标。
+        traces_by_question: (video_id, question_id) → trace 列表。
+        predictions: 归一化后的 prediction 字典列表。
+        d5_stats: D5 决策模式聚合。
+
+    返回:
+        SystemCasePack 或 None（无系统性问题时）。
+    """
+    prediction_map: dict[str, dict[str, Any]] = {
+        p["question_id"]: p for p in predictions
+    }
+
+    # 按行为模式筛选候选
+    early_submit = [
+        qm for qm in all_metrics if not qm.correct and qm.budget_usage < 0.3
+    ]
+    high_conf_wrong = [
+        qm for qm in all_metrics if qm.confidence_calibration == "high_conf_wrong"
+    ]
+    confirmation_bias_cases = [
+        qm for qm in all_metrics if qm.confirmation_bias and not qm.correct
+    ]
+
+    patterns: list[tuple[str, list[QuestionMetrics], bool]] = [
+        ("early_submit", early_submit, True),
+        ("high_conf_wrong", high_conf_wrong, False),
+        ("confirmation_bias", confirmation_bias_cases, False),
+    ]
+
+    failure_cases: list[CaseSample] = []
+    for pattern_name, candidates, sort_asc in patterns:
+        if len(candidates) < _MIN_PATTERN_COUNT:
+            continue
+        sorted_cands = sorted(
+            candidates, key=lambda qm: qm.budget_usage, reverse=not sort_asc
+        )
+        for qm in sorted_cands[:2]:
+            trace = traces_by_question.get((qm.video_id, qm.question_id), [])
+            pred = prediction_map.get(qm.question_id, {})
+            reason = f"pattern={pattern_name}, budget_usage={qm.budget_usage:.2f}"
+            failure_cases.append(
+                _make_case_sample(qm, pred, trace, pattern_name, reason)
+            )
+
+    if not failure_cases:
+        return None
+
+    # 成功案例
+    good_candidates = [
+        qm
+        for qm in all_metrics
+        if qm.correct
+        and qm.confidence_calibration == "calibrated"
+        and not qm.confirmation_bias
+        and 0.3 <= qm.budget_usage <= 0.8
+    ]
+    sorted_good = sorted(good_candidates, key=lambda qm: abs(qm.budget_usage - 0.5))
+    n_success = max(2, len(failure_cases) // 2)
+
+    success_cases: list[CaseSample] = []
+    for qm in sorted_good[:n_success]:
+        trace = traces_by_question.get((qm.video_id, qm.question_id), [])
+        pred = prediction_map.get(qm.question_id, {})
+        reason = f"calibrated, budget_usage={qm.budget_usage:.2f}"
+        success_cases.append(_make_case_sample(qm, pred, trace, None, reason))
+
+    stats = dict(d5_stats)
+    stats["early_submit_count"] = len(early_submit)
+    stats["high_conf_wrong_count"] = len(high_conf_wrong)
+    stats["confirmation_bias_count"] = len(confirmation_bias_cases)
+
+    return SystemCasePack(
+        stats=stats,
+        failure_cases=failure_cases,
+        success_cases=success_cases,
+    )
+
+
+def _build_tool_case_packs(
+    log: HarnessLog,
+    run_id: str,
+    traces_by_question: dict[tuple[str, str], list[dict[str, Any]]],
+    d2_stats: dict[str, dict],
+    tree_cache: dict[str, dict],
+) -> dict[str, ToolCasePack]:
+    """按工具构建 Tool Prompt 案例包。
+
+    参数:
+        log: HarnessLog 实例。
+        run_id: 当前 run ID。
+        traces_by_question: (video_id, question_id) → trace 列表。
+        d2_stats: D2 工具质量聚合。
+        tree_cache: {video_id: tree_data} 缓存。
+
+    返回:
+        {tool_name: ToolCasePack} 映射。
+    """
+    span_rows = log.query(
+        """
+        SELECT video_id, question_id, step, tool_name,
+               extraction_completeness, hallucination_rate,
+               missed_tags_json, hallucinated_tags_json
+        FROM span_evaluations
+        WHERE run_id = ?
+        """,
+        (run_id,),
+    )
+
+    by_tool: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in span_rows:
+        by_tool[row["tool_name"]].append(dict(row))
+
+    def _get_ground_truth(video_id: str, tool_name: str, tool_args: dict) -> str:
+        """从 tree_cache 获取 ground truth。"""
+        nodes = tree_cache.get(video_id, {}).get("nodes", {})
+        node_id = ""
+        if tool_name == "observe_frame":
+            node_ids = tool_args.get("node_ids", [])
+            if isinstance(node_ids, list) and node_ids:
+                node_id = str(node_ids[0])
+        else:
+            node_id = str(tool_args.get("node_id", ""))
+            if not node_id:
+                node_ids = tool_args.get("node_ids", [])
+                if isinstance(node_ids, list) and node_ids:
+                    node_id = str(node_ids[0])
+        node = nodes.get(node_id, {})
+        if isinstance(node, dict):
+            return json.dumps(node.get("card", {}), ensure_ascii=False, sort_keys=True)
+        return ""
+
+    def _find_trace_step(
+        video_id: str, question_id: str, step: int, tool_name: str
+    ) -> dict[str, Any]:
+        """从 traces_by_question 中查找匹配的 trace step。"""
+        traces = traces_by_question.get((video_id, question_id), [])
+        for t in traces:
+            if t.get("step") == step and t.get("tool_name") == tool_name:
+                return t
+        return {}
+
+    def _parse_json_list(raw: Any) -> list[str]:
+        """解析 JSON 列表字符串。"""
+        if isinstance(raw, list):
+            return raw
+        if isinstance(raw, str):
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, list):
+                    return [str(x) for x in parsed]
+            except (json.JSONDecodeError, ValueError):
+                pass
+        return []
+
+    packs: dict[str, ToolCasePack] = {}
+    for tool_name, spans in by_tool.items():
+        target_files = _TOOL_TARGET_FILES.get(tool_name, [])
+        if not target_files:
+            continue
+
+        # 失败 span：两个子维度各取 top 2，去重
+        by_low_completeness = sorted(spans, key=lambda s: s["extraction_completeness"])
+        by_high_hallucination = sorted(
+            spans, key=lambda s: s["hallucination_rate"], reverse=True
+        )
+
+        selected_keys: set[tuple[str, str, int]] = set()
+        failure_spans: list[dict[str, Any]] = []
+
+        for source, label in [
+            (by_low_completeness, "low_completeness"),
+            (by_high_hallucination, "high_hallucination"),
+        ]:
+            for span in source:
+                key = (span["video_id"], span["question_id"], span["step"])
+                if key in selected_keys:
+                    for fs in failure_spans:
+                        if (fs["video_id"], fs["question_id"], fs["step"]) == key:
+                            if label not in fs["selection_reason"]:
+                                fs["selection_reason"] += f", {label}"
+                            break
+                    continue
+                if (
+                    len([k for k in selected_keys if True]) >= 4
+                    and label == "high_hallucination"
+                ):
+                    break
+                selected_keys.add(key)
+                trace_step = _find_trace_step(
+                    span["video_id"], span["question_id"], span["step"], tool_name
+                )
+                raw_args = trace_step.get("tool_args", {})
+                if isinstance(raw_args, str):
+                    try:
+                        raw_args = json.loads(raw_args)
+                    except (json.JSONDecodeError, ValueError):
+                        raw_args = {}
+
+                failure_spans.append(
+                    {
+                        "video_id": span["video_id"],
+                        "question_id": span["question_id"],
+                        "step": span["step"],
+                        "tool_name": tool_name,
+                        "tool_args": raw_args,
+                        "tool_output": trace_step.get("tool_output", ""),
+                        "ground_truth": _get_ground_truth(
+                            span["video_id"], tool_name, raw_args
+                        ),
+                        "extraction_completeness": span["extraction_completeness"],
+                        "hallucination_rate": span["hallucination_rate"],
+                        "missed_info_tags": _parse_json_list(
+                            span.get("missed_tags_json", "[]")
+                        ),
+                        "hallucination_tags": _parse_json_list(
+                            span.get("hallucinated_tags_json", "[]")
+                        ),
+                        "selection_reason": label,
+                    }
+                )
+                if len(failure_spans) >= 4:
+                    break
+
+        # 成功 span
+        good_spans = [
+            s
+            for s in spans
+            if s["extraction_completeness"] >= 0.9 and s["hallucination_rate"] == 0.0
+        ]
+        good_spans.sort(key=lambda s: s["extraction_completeness"], reverse=True)
+        n_success = max(2, len(failure_spans) // 2)
+
+        success_spans: list[dict[str, Any]] = []
+        for span in good_spans[:n_success]:
+            trace_step = _find_trace_step(
+                span["video_id"], span["question_id"], span["step"], tool_name
+            )
+            raw_args = trace_step.get("tool_args", {})
+            if isinstance(raw_args, str):
+                try:
+                    raw_args = json.loads(raw_args)
+                except (json.JSONDecodeError, ValueError):
+                    raw_args = {}
+
+            success_spans.append(
+                {
+                    "video_id": span["video_id"],
+                    "question_id": span["question_id"],
+                    "step": span["step"],
+                    "tool_name": tool_name,
+                    "tool_args": raw_args,
+                    "tool_output": trace_step.get("tool_output", ""),
+                    "ground_truth": _get_ground_truth(
+                        span["video_id"], tool_name, raw_args
+                    ),
+                    "extraction_completeness": span["extraction_completeness"],
+                    "hallucination_rate": span["hallucination_rate"],
+                    "missed_info_tags": _parse_json_list(
+                        span.get("missed_tags_json", "[]")
+                    ),
+                    "hallucination_tags": _parse_json_list(
+                        span.get("hallucinated_tags_json", "[]")
+                    ),
+                    "selection_reason": "good_quality",
+                }
+            )
+
+        packs[tool_name] = ToolCasePack(
+            tool_name=tool_name,
+            target_files=target_files,
+            stats=d2_stats.get(tool_name, {}),
+            failure_spans=failure_spans,
+            success_spans=success_spans,
+        )
+
+    return packs
+
+
 _DIAGNOSE_PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
 
 
