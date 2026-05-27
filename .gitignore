@@ -187,3 +187,5 @@ tools/wiki-site/app/public/*.db
 pencil/
 CLAUDE.md
 store/
+workspaces/
+references/
