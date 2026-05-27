@@ -682,20 +682,29 @@ def aggregate_d5(all_metrics: list[QuestionMetrics]) -> dict[str, Any]:
     }
 
 
+_DIAGNOSE_PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts"
+
+
 def run_diagnosis(
     log: HarnessLog,
     run_id: str,
     workspace_dir: Path,
     skills_dir: Path,
-    prompts_dir: Path,
     concurrency: int = 1,
     task_types: list[str] | None = None,
     video_ids: list[str] | None = None,
     question_ids: list[str] | None = None,
     only_incorrect: bool = False,
     stop_reasons: list[str] | None = None,
+    diagnose_prompts_dir: Path = _DIAGNOSE_PROMPTS_DIR,
 ) -> DiagnosisResult:
-    """执行两阶段诊断流水线并写出聚合报告。"""
+    """执行两阶段诊断流水线并写出聚合报告。
+
+    参数:
+        diagnose_prompts_dir: 诊断 prompt 目录，默认项目根目录 prompts/。
+            与推理 prompt（store/prompts/v1/）分开管理，诊断 prompt 不参与版本化。
+    """
+    prompts_dir = diagnose_prompts_dir
     effective_stop_reasons = stop_reasons or ["finished", "budget_exceeded"]
     task_type_filter = set(task_types or [])
     video_filter = set(video_ids or [])

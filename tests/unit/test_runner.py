@@ -202,7 +202,7 @@ class TestRunnerDiagnose:
         assert mock_fn.call_args.kwargs["run_id"] == "run-123"
         assert mock_fn.call_args.kwargs["workspace_dir"] == config.workspace_dir
         assert mock_fn.call_args.kwargs["skills_dir"] == runner._paths.skills_dir
-        assert mock_fn.call_args.kwargs["prompts_dir"] == runner._paths.prompts_dir
+        assert "prompts_dir" not in mock_fn.call_args.kwargs
         assert mock_fn.call_args.kwargs["task_types"] == ["temporal_reasoning"]
 
     def test_diagnose_requires_run_id(self, workspace_env: dict[str, Path]) -> None:

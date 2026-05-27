@@ -84,7 +84,6 @@ class Runner:
                 run_id=effective_run_id,
                 workspace_dir=self._config.workspace_dir,
                 skills_dir=self._paths.skills_dir,
-                prompts_dir=self._paths.prompts_dir,
                 concurrency=self._config.concurrency,
                 **filters,
             )
