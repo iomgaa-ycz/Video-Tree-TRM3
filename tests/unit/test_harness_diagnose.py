@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from core.harness.diagnose import (
+    CaseSample,
     DiagnosisResult,
     ErrorAttribution,
     QuestionMetrics,
+    SkillCasePack,
     SkillStepAdherence,
     SpanMetrics,
+    SystemCasePack,
+    ToolCasePack,
     aggregate_d2,
     aggregate_d5,
     attribute_error,
@@ -309,3 +313,94 @@ def test_aggregate_d5() -> None:
     assert result["low_conf_right_rate"] == 1 / 3
     assert result["confirmation_bias_rate"] == 2 / 3
     assert result["per_type_bias"] == {"type_a": 0.5, "type_b": 1.0}
+
+
+# ---------------------------------------------------------------------------
+# 案例包数据结构测试
+# ---------------------------------------------------------------------------
+
+
+def test_case_sample_construction() -> None:
+    """CaseSample 应能正常构造并保存全部字段。"""
+    sample = CaseSample(
+        question_id="q_001",
+        video_id="video_001",
+        task_type="Temporal Reasoning",
+        question="What happened first?",
+        options=["A. X", "B. Y", "C. Z", "D. W"],
+        answer="A",
+        prediction="B",
+        correct=False,
+        error_type="search_failure",
+        selection_reason="missed_nodes=3, budget_usage=1.0",
+        metrics={"budget_usage": 1.0, "missed_nodes": ["L2_001", "L2_002", "L3_005"]},
+        trace=[
+            {"step": 0, "tool_name": "view_node", "tool_args": {"node_id": "L1_000"}}
+        ],
+    )
+    assert sample.question_id == "q_001"
+    assert sample.error_type == "search_failure"
+    assert len(sample.trace) == 1
+
+
+def test_skill_case_pack_construction() -> None:
+    """SkillCasePack 应能正常构造，默认列表为空。"""
+    pack = SkillCasePack(
+        task_type="Temporal Reasoning",
+        target_file="temporal-reasoning.md",
+        stats={"n_total": 60, "accuracy": 0.5},
+        failure_cases=[],
+        success_cases=[],
+    )
+    assert pack.task_type == "Temporal Reasoning"
+    assert pack.target_file == "temporal-reasoning.md"
+    assert pack.failure_cases == []
+
+
+def test_system_case_pack_construction() -> None:
+    """SystemCasePack 应能正常构造。"""
+    pack = SystemCasePack(
+        stats={"early_submit_rate": 0.15, "early_submit_count": 12},
+        failure_cases=[],
+        success_cases=[],
+    )
+    assert pack.stats["early_submit_count"] == 12
+
+
+def test_tool_case_pack_construction() -> None:
+    """ToolCasePack 应能正常构造。"""
+    pack = ToolCasePack(
+        tool_name="view_node",
+        target_files=["view_node_extract.md", "view_node_verify.md"],
+        stats={"avg_completeness": 0.78, "n_calls": 500},
+        failure_spans=[],
+        success_spans=[],
+    )
+    assert pack.tool_name == "view_node"
+    assert len(pack.target_files) == 2
+
+
+def test_diagnosis_result_case_pack_defaults() -> None:
+    """DiagnosisResult 新字段的默认值应允许无案例包构造。"""
+    result = DiagnosisResult(run_id="test_run")
+    assert result.skill_case_packs == {}
+    assert result.system_case_pack is None
+    assert result.tool_case_packs == {}
+
+
+def test_diagnosis_result_with_case_packs() -> None:
+    """DiagnosisResult 应能携带案例包。"""
+    skill_pack = SkillCasePack(
+        task_type="Temporal Reasoning",
+        target_file="temporal-reasoning.md",
+        stats={},
+    )
+    result = DiagnosisResult(
+        run_id="test_run",
+        skill_case_packs={"Temporal Reasoning": skill_pack},
+    )
+    assert "Temporal Reasoning" in result.skill_case_packs
+    assert (
+        result.skill_case_packs["Temporal Reasoning"].target_file
+        == "temporal-reasoning.md"
+    )

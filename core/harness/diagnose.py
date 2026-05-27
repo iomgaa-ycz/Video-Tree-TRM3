@@ -130,6 +130,101 @@ class ErrorAttribution:
 
 
 @dataclass
+class CaseSample:
+    """单个案例样本，进化模块的最小输入单元。"""
+
+    question_id: str
+    """题目唯一标识。"""
+
+    video_id: str
+    """对应视频唯一标识。"""
+
+    task_type: str
+    """题目任务类型。"""
+
+    question: str
+    """题目文本。"""
+
+    options: list[str]
+    """选项列表。"""
+
+    answer: str
+    """正确答案。"""
+
+    prediction: str | None
+    """Agent 预测答案。"""
+
+    correct: bool
+    """是否答对。"""
+
+    error_type: str | None
+    """错误类型；正确题为 None。"""
+
+    selection_reason: str
+    """被选为案例的原因说明。"""
+
+    metrics: dict[str, Any]
+    """QuestionMetrics 的关键字段子集。"""
+
+    trace: list[dict[str, Any]]
+    """完整推理轨迹，不截断。"""
+
+
+@dataclass
+class SkillCasePack:
+    """单个 task_type 的案例包，服务于 Skill 进化。"""
+
+    task_type: str
+    """题目任务类型。"""
+
+    target_file: str
+    """对应 skill 文件名，如 'temporal-reasoning.md'。"""
+
+    stats: dict[str, Any]
+    """从 D3/D4 提取的该题型统计。"""
+
+    failure_cases: list[CaseSample] = field(default_factory=list)
+    """失败案例列表。"""
+
+    success_cases: list[CaseSample] = field(default_factory=list)
+    """成功案例列表。"""
+
+
+@dataclass
+class SystemCasePack:
+    """跨题型行为模式案例包，服务于 System Prompt 进化。"""
+
+    stats: dict[str, Any]
+    """从 D5 提取的行为模式统计。"""
+
+    failure_cases: list[CaseSample] = field(default_factory=list)
+    """失败案例列表。"""
+
+    success_cases: list[CaseSample] = field(default_factory=list)
+    """成功案例列表。"""
+
+
+@dataclass
+class ToolCasePack:
+    """单个 tool_name 的案例包，服务于 Tool Prompt 进化。"""
+
+    tool_name: str
+    """工具名称。"""
+
+    target_files: list[str]
+    """对应 prompt 文件名列表。"""
+
+    stats: dict[str, Any]
+    """从 D2 提取的工具质量统计。"""
+
+    failure_spans: list[dict[str, Any]] = field(default_factory=list)
+    """失败 span 案例列表。"""
+
+    success_spans: list[dict[str, Any]] = field(default_factory=list)
+    """成功 span 案例列表。"""
+
+
+@dataclass
 class DiagnosisResult:
     """完整诊断报告，即 Stage 2 输出。"""
 
@@ -159,6 +254,15 @@ class DiagnosisResult:
 
     decision_patterns: dict[str, Any] = field(default_factory=dict)
     """决策模式与行为模式摘要。"""
+
+    skill_case_packs: dict[str, SkillCasePack] = field(default_factory=dict)
+    """按题型组织的 Skill 进化案例包。"""
+
+    system_case_pack: SystemCasePack | None = None
+    """跨题型行为模式案例包；无系统性问题时为 None。"""
+
+    tool_case_packs: dict[str, ToolCasePack] = field(default_factory=dict)
+    """按工具名组织的 Tool Prompt 进化案例包。"""
 
 
 def _now_iso() -> str:

@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from core.harness.config import RunConfig, load_config
 from core.harness.diagnose import (
+    CaseSample,
     DiagnosisResult,
     ErrorAttribution,
     QuestionMetrics,
+    SkillCasePack,
     SkillStepAdherence,
     SpanMetrics,
+    SystemCasePack,
+    ToolCasePack,
     run_diagnosis,
 )
 from core.harness.evolve import (
@@ -27,6 +31,7 @@ from core.harness.question_gen import (
 from core.harness.runner import Runner
 
 __all__ = [
+    "CaseSample",
     "DiagnosisResult",
     "ErrorAttribution",
     "EvolutionRecord",
@@ -38,9 +43,12 @@ __all__ = [
     "QuestionMetrics",
     "RunConfig",
     "Runner",
+    "SkillCasePack",
     "SkillStepAdherence",
     "SpanMetrics",
+    "SystemCasePack",
     "TargetSuggestionSet",
+    "ToolCasePack",
     "TracePlugin",
     "ValidationResult",
     "load_benchmark",
