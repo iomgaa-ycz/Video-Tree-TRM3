@@ -240,6 +240,11 @@
       "id": "design:evolution-module",
       "label": "进化模块设计",
       "type": "design"
+    },
+    {
+      "id": "plan:2026-05-27-evolution-module",
+      "label": "进化模块实现计划",
+      "type": "plan"
     }
   ],
   "links": [
@@ -648,6 +653,13 @@
       "relation": "depends_on",
       "evidence": "进化模块读取诊断管线的 DiagnosisResult 作为输入",
       "added": "2026-05-27T14:30:50.467832+00:00"
+    },
+    {
+      "source": "plan:2026-05-27-evolution-module",
+      "target": "design:evolution-module",
+      "relation": "implements",
+      "evidence": "实现设计文档 2026-05-27-evolution-module-design.md 中的进化模块",
+      "added": "2026-05-27T14:38:50.250641+00:00"
     }
   ]
 }

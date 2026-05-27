@@ -1,6 +1,6 @@
 # Research Wiki 索引
 
-> 自动生成，更新时间：2026-05-27 14:30 UTC
+> 自动生成，更新时间：2026-05-27 14:38 UTC
 
 ## paper (23)
 - [A Comprehensive Survey of Self-Evolving AI Agents: A New Paradigm Bridging Foundation Models and Lifelong Agentic Systems](papers/fang2025_a_comprehensive_survey_of_self.md) `paper:fang2025_a_comprehensive_survey_of_self`
@@ -57,7 +57,7 @@
 - [诊断流水线设计 — 从 13 个指标到 5 个维度](designs/diagnose-pipeline.md) `design:diagnose-pipeline`
 - [进化模块设计](designs/evolution-module.md) `design:evolution-module`
 
-## plan (17)
+## plan (18)
 - [2026-05-25-agent-loop](plans/2026-05-25-agent-loop.md) `plan:2026-05-25-agent-loop`
 - [2026-05-25-agent-tools](plans/2026-05-25-agent-tools.md) `plan:2026-05-25-agent-tools`
 - [2026-05-25-llm-asr-client](plans/2026-05-25-llm-asr-client.md) `plan:2026-05-25-llm-asr-client`
@@ -75,3 +75,4 @@
 - [数据结构层实现计划](plans/2026-05-25-data-structures.md) `plan:2026-05-25-data-structures`
 - [诊断案例包与 Prompt 清理实现计划](plans/case-pack.md) `plan:case-pack`
 - [诊断流水线实现计划](plans/diagnose-pipeline.md) `plan:diagnose-pipeline`
+- [进化模块实现计划](plans/2026-05-27-evolution-module.md) `plan:2026-05-27-evolution-module`

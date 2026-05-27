@@ -100,3 +100,6 @@
 - [2026-05-27 14:30 UTC] 新增边: design:evolution-module --depends_on--> design:case-pack
 - [2026-05-27 14:30 UTC] 新增边: design:evolution-module --depends_on--> design:diagnose-pipeline
 - [2026-05-27 14:30 UTC] 重建索引: 64 篇页面
+- [2026-05-27 14:38 UTC] 新增 plan: 进化模块实现计划 (plan:2026-05-27-evolution-module)
+- [2026-05-27 14:38 UTC] 新增边: plan:2026-05-27-evolution-module --implements--> design:evolution-module
+- [2026-05-27 14:38 UTC] 重建索引: 65 篇页面
