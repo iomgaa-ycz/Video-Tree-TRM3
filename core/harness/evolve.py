@@ -125,13 +125,16 @@ def _check_length(original: str, evolved: str, errors: list[str]) -> None:
     if orig_len == 0:
         return
     ratio = len(evolved) / orig_len
+    evol_len = len(evolved)
     if ratio > 2.0:
         errors.append(
-            f"长度超限: 改写后 {len(evolved)} 字符是原文 {orig_len} 的 {ratio:.1f} 倍 (上限 2.0)"
+            f"长度超限: {evol_len} 字符是原文 {orig_len} 的"
+            f" {ratio:.1f} 倍 (上限 2.0)"
         )
     if ratio < 0.3:
         errors.append(
-            f"长度不足: 改写后 {len(evolved)} 字符是原文 {orig_len} 的 {ratio:.1f} 倍 (下限 0.3)"
+            f"长度不足: {evol_len} 字符是原文 {orig_len} 的"
+            f" {ratio:.1f} 倍 (下限 0.3)"
         )
 
 
@@ -404,9 +407,10 @@ def _evolve_single_skill(
     original = (skills_dir / target_file).read_text(encoding="utf-8")
     system_prompt = _load_prompt_template("evolve_skill.md")
 
+    stats_json = json.dumps(pack.stats, ensure_ascii=False, indent=2)
     user_msg = (
         f"## 当前 Skill 文件\n\n{original}\n\n"
-        f"## 聚合统计\n\n```json\n{json.dumps(pack.stats, ensure_ascii=False, indent=2)}\n```\n\n"
+        f"## 聚合统计\n\n```json\n{stats_json}\n```\n\n"
         f"## 失败案例\n\n{_format_case_samples(pack.failure_cases)}\n\n"
         f"## 成功案例\n\n{_format_case_samples(pack.success_cases)}"
     )
@@ -471,7 +475,7 @@ def _evolve_single_skill(
             messages.append(
                 {
                     "role": "user",
-                    "content": f"验证失败，请修正以下问题后重新输出：\n{error_feedback}",
+                    "content": f"验证失败，请修正后重新输出：\n{error_feedback}",
                 }
             )
             continue
@@ -523,9 +527,10 @@ def _evolve_system_prompt(
     original = (prompts_dir / target_file).read_text(encoding="utf-8")
     system_prompt = _load_prompt_template("evolve_system.md")
 
+    stats_json = json.dumps(pack.stats, ensure_ascii=False, indent=2)
     user_msg = (
         f"## 当前 System Prompt\n\n{original}\n\n"
-        f"## D5 行为模式统计\n\n```json\n{json.dumps(pack.stats, ensure_ascii=False, indent=2)}\n```\n\n"
+        f"## D5 行为模式统计\n\n```json\n{stats_json}\n```\n\n"
         f"## 失败案例\n\n{_format_case_samples(pack.failure_cases)}\n\n"
         f"## 成功案例\n\n{_format_case_samples(pack.success_cases)}"
     )
@@ -588,7 +593,7 @@ def _evolve_system_prompt(
             messages.append(
                 {
                     "role": "user",
-                    "content": f"验证失败，请修正以下问题后重新输出：\n{error_feedback}",
+                    "content": f"验证失败，请修正后重新输出：\n{error_feedback}",
                 }
             )
             continue
@@ -647,10 +652,11 @@ def _evolve_single_tool(
 
     system_prompt = _load_prompt_template("evolve_tool.md")
 
+    stats_json = json.dumps(pack.stats, ensure_ascii=False, indent=2)
     user_msg = (
         f"## 当前 extract prompt\n\n{orig_extract}\n\n"
         f"## 当前 verify prompt\n\n{orig_verify}\n\n"
-        f"## 工具质量统计\n\n```json\n{json.dumps(pack.stats, ensure_ascii=False, indent=2)}\n```\n\n"
+        f"## 工具质量统计\n\n```json\n{stats_json}\n```\n\n"
         f"## 失败 span 案例\n\n{_format_spans(pack.failure_spans)}\n\n"
         f"## 成功 span 案例\n\n{_format_spans(pack.success_spans)}"
     )
@@ -721,7 +727,7 @@ def _evolve_single_tool(
             messages.append(
                 {
                     "role": "user",
-                    "content": f"验证失败，请修正以下问题后重新输出：\n{error_feedback}",
+                    "content": f"验证失败，请修正后重新输出：\n{error_feedback}",
                 }
             )
             continue
