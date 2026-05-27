@@ -1,6 +1,6 @@
 # Research Wiki 索引
 
-> 自动生成，更新时间：2026-05-26 04:56 UTC
+> 自动生成，更新时间：2026-05-27 08:45 UTC
 
 ## paper (23)
 - [A Comprehensive Survey of Self-Evolving AI Agents: A New Paradigm Bridging Foundation Models and Lifelong Agentic Systems](papers/fang2025_a_comprehensive_survey_of_self.md) `paper:fang2025_a_comprehensive_survey_of_self`
@@ -35,27 +35,37 @@
 - [自进化视频理解 Agent：现有视频 Agent 使用静态工具集和固定策略，缺乏从经验中学习并进化搜索技能的能力](gaps/self-evolving-video-agent.md) `gap:self-evolving-video-agent`
 - [递归推理用于检索：TRM/HRM 的递归深度推理范式尚未应用于信息检索或视频树搜索任务](gaps/recursive-reasoning-for-retrieval.md) `gap:recursive-reasoning-for-retrieval`
 
-## design (10)
+## design (16)
 - [2026-05-25-agent-loop-design](designs/2026-05-25-agent-loop-design.md) `design:2026-05-25-agent-loop-design`
 - [2026-05-25-llm-asr-client-design](designs/2026-05-25-llm-asr-client-design.md) `design:2026-05-25-llm-asr-client-design`
+- [2026-05-26-prompt-skill-restructure-design](designs/2026-05-26-prompt-skill-restructure-design.md) `design:2026-05-26-prompt-skill-restructure-design`
 - [AgentLoop: Thinking+JSON 推理循环引擎](designs/agent-loop.md) `design:agent-loop`
 - [LLM Client & ASR Client 设计](designs/llm-asr-client.md) `design:llm-asr-client`
+- [main.py + Runner + RunConfig 设计](designs/2026-05-26-main-runner-config-design.md) `design:2026-05-26-main-runner-config-design`
+- [main.py + Runner + RunConfig 设计](designs/main-runner-config.md) `design:main-runner-config`
+- [System Prompt 与 Skills 重构设计](designs/prompt-skill-restructure.md) `design:prompt-skill-restructure`
 - [System Prompt 迁移与 PromptManager 设计](designs/2026-05-25-prompt-manager-design.md) `design:2026-05-25-prompt-manager-design`
 - [System Prompt 迁移与 PromptManager 设计](designs/prompt-manager.md) `design:prompt-manager`
 - [Workspace + Store 架构设计](designs/workspace-store.md) `design:workspace-store`
 - [推理步骤（inference）编排设计](designs/2026-05-26-inference-step.md) `design:2026-05-26-inference-step`
 - [搜索 Agent 工具层设计](designs/2026-05-25-agent-tools-design.md) `design:agent-tools`
 - [数据结构层设计：Agent Loop + Harness 四任务](designs/2026-05-25-data-structures.md) `design:2026-05-25-data-structures`
+- [诊断流水线设计 — 从 13 个指标到 5 个维度](designs/2026-05-27-diagnose-pipeline-design.md) `design:2026-05-27-diagnose-pipeline-design`
+- [诊断流水线设计 — 从 13 个指标到 5 个维度](designs/diagnose-pipeline.md) `design:diagnose-pipeline`
 
-## plan (11)
+## plan (15)
 - [2026-05-25-agent-loop](plans/2026-05-25-agent-loop.md) `plan:2026-05-25-agent-loop`
 - [2026-05-25-agent-tools](plans/2026-05-25-agent-tools.md) `plan:2026-05-25-agent-tools`
 - [2026-05-25-llm-asr-client](plans/2026-05-25-llm-asr-client.md) `plan:2026-05-25-llm-asr-client`
 - [2026-05-25-prompt-manager](plans/2026-05-25-prompt-manager.md) `plan:2026-05-25-prompt-manager`
+- [2026-05-27-diagnose-pipeline](plans/2026-05-27-diagnose-pipeline.md) `plan:2026-05-27-diagnose-pipeline`
 - [AgentLoop 实现计划](plans/agent-loop.md) `plan:agent-loop`
 - [LLM & ASR Client 实现计划](plans/llm-asr-client.md) `plan:llm-asr-client`
+- [main.py + Runner + RunConfig 实现计划](plans/2026-05-26-main-runner-config.md) `plan:2026-05-26-main-runner-config`
+- [main.py + Runner + RunConfig 实现计划](plans/main-runner-config-plan.md) `plan:main-runner-config-plan`
 - [System Prompt 迁移与 PromptManager 实现计划](plans/prompt-manager-plan.md) `plan:prompt-manager-plan`
 - [Workspace + Store 实现计划](plans/workspace-store.md) `plan:workspace-store`
 - [推理步骤（inference）实现计划](plans/2026-05-26-inference-step.md) `plan:2026-05-26-inference-step`
 - [搜索 Agent 工具层实现计划](plans/agent-tools.md) `plan:agent-tools`
 - [数据结构层实现计划](plans/2026-05-25-data-structures.md) `plan:2026-05-25-data-structures`
+- [诊断流水线实现计划](plans/diagnose-pipeline.md) `plan:diagnose-pipeline`

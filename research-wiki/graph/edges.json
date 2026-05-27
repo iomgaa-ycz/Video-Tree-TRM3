@@ -200,6 +200,31 @@
       "id": "plan:2026-05-26-inference-step",
       "label": "推理步骤（inference）实现计划",
       "type": "plan"
+    },
+    {
+      "id": "design:main-runner-config",
+      "label": "main.py + Runner + RunConfig 设计",
+      "type": "design"
+    },
+    {
+      "id": "plan:main-runner-config-plan",
+      "label": "main.py + Runner + RunConfig 实现计划",
+      "type": "plan"
+    },
+    {
+      "id": "design:prompt-skill-restructure",
+      "label": "System Prompt 与 Skills 重构设计",
+      "type": "design"
+    },
+    {
+      "id": "design:diagnose-pipeline",
+      "label": "诊断流水线设计 — 从 13 个指标到 5 个维度",
+      "type": "design"
+    },
+    {
+      "id": "plan:diagnose-pipeline",
+      "label": "诊断流水线实现计划",
+      "type": "plan"
     }
   ],
   "links": [
@@ -566,6 +591,20 @@
       "relation": "implements",
       "evidence": "实现推理步骤编排设计中的全部接口",
       "added": "2026-05-26T04:56:40.726432+00:00"
+    },
+    {
+      "source": "plan:main-runner-config-plan",
+      "target": "design:main-runner-config",
+      "relation": "implements",
+      "evidence": "实现 main.py + Runner + RunConfig 设计文档中定义的架构",
+      "added": "2026-05-26T08:19:19.366938+00:00"
+    },
+    {
+      "source": "plan:diagnose-pipeline",
+      "target": "design:diagnose-pipeline",
+      "relation": "implements",
+      "evidence": "实现设计文档中定义的两阶段诊断流水线",
+      "added": "2026-05-27T08:45:27.522536+00:00"
     }
   ]
 }

@@ -78,3 +78,15 @@
 - [2026-05-26 04:47 UTC] 新增 plan: 推理步骤（inference）实现计划 (plan:2026-05-26-inference-step)
 - [2026-05-26 04:56 UTC] 新增边: plan:2026-05-26-inference-step --implements--> design:2026-05-26-inference-step
 - [2026-05-26 04:56 UTC] 重建索引: 48 篇页面
+- [2026-05-26 08:15 UTC] 新增 design: main.py + Runner + RunConfig 设计 (design:main-runner-config)
+- [2026-05-26 08:15 UTC] 重建索引: 50 篇页面
+- [2026-05-26 08:19 UTC] 新增 plan: main.py + Runner + RunConfig 实现计划 (plan:main-runner-config-plan)
+- [2026-05-26 08:19 UTC] 新增边: plan:main-runner-config-plan --implements--> design:main-runner-config
+- [2026-05-26 08:19 UTC] 重建索引: 52 篇页面
+- [2026-05-26 12:31 UTC] 新增 design: System Prompt 与 Skills 重构设计 (design:prompt-skill-restructure)
+- [2026-05-26 12:31 UTC] 重建索引: 54 篇页面
+- [2026-05-27 08:31 UTC] 新增 design: 诊断流水线设计 — 从 13 个指标到 5 个维度 (design:diagnose-pipeline)
+- [2026-05-27 08:31 UTC] 重建索引: 56 篇页面
+- [2026-05-27 08:45 UTC] 新增 plan: 诊断流水线实现计划 (plan:diagnose-pipeline)
+- [2026-05-27 08:45 UTC] 新增边: plan:diagnose-pipeline --implements--> design:diagnose-pipeline
+- [2026-05-27 08:45 UTC] 重建索引: 58 篇页面
