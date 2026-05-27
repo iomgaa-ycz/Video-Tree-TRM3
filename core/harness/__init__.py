@@ -15,7 +15,16 @@ from core.harness.diagnose import (
     ToolCasePack,
     run_diagnosis,
 )
-from core.harness.evolve import EvolutionRecord, EvolutionResult, ValidationResult
+from core.harness.evolve import (
+    EvolutionRecord,
+    EvolutionResult,
+    ValidationResult,
+    run_evolution,
+    validate_skill,
+    validate_system,
+    validate_tool,
+    write_evolution_records,
+)
 from core.harness.inference import InferenceResult, TracePlugin, run_inference
 from core.harness.log import HarnessLog
 from core.harness.question_gen import (
@@ -48,5 +57,10 @@ __all__ = [
     "load_benchmark",
     "load_config",
     "run_diagnosis",
+    "run_evolution",
     "run_inference",
+    "validate_skill",
+    "validate_system",
+    "validate_tool",
+    "write_evolution_records",
 ]
