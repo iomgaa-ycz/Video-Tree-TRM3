@@ -49,6 +49,12 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--only-incorrect", action="store_true", dest="only_incorrect")
     parser.add_argument("--video-ids", nargs="+", dest="video_ids")
     parser.add_argument("--question-ids", nargs="+", dest="question_ids")
+    parser.add_argument(
+        "--evolution-targets",
+        nargs="+",
+        choices=["skills", "system", "tools"],
+        dest="evolution_targets",
+    )
     return parser
 
 
@@ -115,8 +121,27 @@ def main() -> None:
             question_ids=args.question_ids,
         )
     elif config.mode == "train":
-        logger.error("train 模式尚未实现")
-        raise SystemExit(1)
+        if not config.run_id:
+            logger.error("train 模式必须提供 --run-id（要进化的诊断运行 ID）")
+            raise SystemExit(1)
+        diagnosis = runner.diagnose(
+            task_types=args.task_types,
+            only_incorrect=args.only_incorrect,
+            video_ids=args.video_ids,
+            question_ids=args.question_ids,
+        )
+        evolution_targets = (
+            set(args.evolution_targets) if args.evolution_targets else None
+        )
+        evo_result = runner.evolve(diagnosis, targets=evolution_targets)
+        logger.info(
+            "进化完成: accepted={}, rejected={}, skipped={}, skills={}, prompts={}",
+            evo_result.accepted_count,
+            evo_result.rejected_count,
+            evo_result.skipped_count,
+            evo_result.skills_version or "无变更",
+            evo_result.prompts_version or "无变更",
+        )
 
 
 if __name__ == "__main__":

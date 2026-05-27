@@ -9,10 +9,11 @@ from loguru import logger
 from core.harness.config import RunConfig
 from core.harness.inference import InferenceResult, run_inference
 from core.harness.question_gen import load_benchmark
-from core.workspace import ResolvedPaths, init_workspace, resolve_paths
+from core.workspace import ResolvedPaths, init_workspace, resolve_paths, update_manifest
 
 if TYPE_CHECKING:
     from core.harness.diagnose import DiagnosisResult
+    from core.harness.evolve import EvolutionResult
 
 
 class Runner:
@@ -87,3 +88,47 @@ class Runner:
                 concurrency=self._config.concurrency,
                 **filters,
             )
+
+    def evolve(
+        self,
+        diagnosis: "DiagnosisResult",
+        targets: set[str] | None = None,
+    ) -> "EvolutionResult":
+        """执行一次进化，更新 manifest 指向新版本。
+
+        参数:
+            diagnosis: DiagnosisResult 实例。
+            targets: 要进化的目标类型集合，默认全部。
+
+        返回:
+            EvolutionResult 实例。
+        """
+        from core.harness.evolve import run_evolution
+
+        result = run_evolution(
+            diagnosis=diagnosis,
+            workspace_dir=self._config.workspace_dir,
+            store_dir=self._paths.store_dir,
+            skills_dir=self._paths.skills_dir,
+            prompts_dir=self._paths.prompts_dir,
+            db_path=self._paths.db_path,
+            targets=targets,
+            concurrency=self._config.concurrency,
+        )
+
+        if result.skills_version:
+            update_manifest(
+                self._config.workspace_dir,
+                skills=f"skills/{result.skills_version}",
+            )
+            logger.info("Manifest 已更新: skills → {}", result.skills_version)
+
+        if result.prompts_version:
+            update_manifest(
+                self._config.workspace_dir,
+                prompts=f"prompts/{result.prompts_version}",
+            )
+            logger.info("Manifest 已更新: prompts → {}", result.prompts_version)
+
+        self._paths = resolve_paths(self._config.workspace_dir)
+        return result
