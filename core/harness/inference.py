@@ -172,11 +172,17 @@ def _run_single_question(
         )
 
         result_dict = loop_result.result if isinstance(loop_result.result, dict) else {}
+        evidence = result_dict.get("evidence", "")
+        if isinstance(evidence, dict):
+            evidence = json.dumps(evidence, ensure_ascii=False)
+        reasoning = result_dict.get("reasoning", "")
+        if isinstance(reasoning, dict):
+            reasoning = json.dumps(reasoning, ensure_ascii=False)
         record.update(
             {
                 "prediction": result_dict.get("answer"),
-                "evidence": result_dict.get("evidence", ""),
-                "reasoning": result_dict.get("reasoning", ""),
+                "evidence": evidence,
+                "reasoning": reasoning,
                 "steps_used": loop_result.steps_used,
                 "prompt_tokens": loop_result.token_usage["prompt_tokens"],
                 "completion_tokens": loop_result.token_usage["completion_tokens"],
