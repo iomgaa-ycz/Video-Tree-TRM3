@@ -15,12 +15,7 @@ from core.harness.diagnose import (
     ToolCasePack,
     run_diagnosis,
 )
-from core.harness.evolve import (
-    EvolutionRecord,
-    EvolutionResult,
-    TargetSuggestionSet,
-    ValidationResult,
-)
+from core.harness.evolve import EvolutionRecord, EvolutionResult, ValidationResult
 from core.harness.inference import InferenceResult, TracePlugin, run_inference
 from core.harness.log import HarnessLog
 from core.harness.question_gen import (
@@ -47,7 +42,6 @@ __all__ = [
     "SkillStepAdherence",
     "SpanMetrics",
     "SystemCasePack",
-    "TargetSuggestionSet",
     "ToolCasePack",
     "TracePlugin",
     "ValidationResult",
