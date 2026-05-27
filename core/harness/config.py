@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-_VALID_MODES = {"infer", "train"}
+_VALID_MODES = {"infer", "train", "diagnose"}
 _VALID_SKILL_MODES = {"auto", "manual", "none"}
 _PATH_FIELDS = {"workspace_dir", "store_dir"}
 
@@ -20,7 +20,8 @@ class RunConfig:
     字段:
         workspace_dir: Workspace 根目录。
         store_dir: Store 根目录。
-        mode: 运行模式，"infer" 或 "train"。
+        mode: 运行模式，"infer" / "train" / "diagnose"。
+        run_id: diagnose 模式要分析的运行 ID。
         concurrency: 并行 worker 数。
         max_steps: AgentLoop 单题最大步数。
         skill_mode: Skill 加载模式，"auto" / "manual" / "none"。
@@ -34,6 +35,7 @@ class RunConfig:
     workspace_dir: Path
     store_dir: Path
     mode: str
+    run_id: str
     concurrency: int
     max_steps: int
     skill_mode: str
@@ -55,6 +57,8 @@ def _validate(config: RunConfig) -> None:
     """
     if config.mode not in _VALID_MODES:
         raise ValueError(f"mode 必须为 {_VALID_MODES} 之一，实际: {config.mode!r}")
+    if config.mode == "diagnose" and not config.run_id:
+        raise ValueError("mode 为 'diagnose' 时必须提供 run_id。")
     if config.skill_mode not in _VALID_SKILL_MODES:
         raise ValueError(
             f"skill_mode 必须为 {_VALID_SKILL_MODES} 之一，实际: {config.skill_mode!r}"

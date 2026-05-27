@@ -52,6 +52,7 @@ def _make_config(workspace_env: dict[str, Path], **overrides) -> RunConfig:
         "workspace_dir": workspace_env["workspace_dir"],
         "store_dir": workspace_env["store_dir"],
         "mode": "infer",
+        "run_id": "",
         "concurrency": 2,
         "max_steps": 5,
         "skill_mode": "auto",
@@ -80,6 +81,7 @@ class TestRunnerInit:
             workspace_dir=tmp_path / "nonexistent",
             store_dir=tmp_path / "store",
             mode="infer",
+            run_id="",
             concurrency=2,
             max_steps=5,
             skill_mode="auto",
@@ -177,3 +179,36 @@ class TestRunnerAutoWorkspace:
         runner = Runner(config)
         assert (new_ws / "manifest.json").exists()
         assert runner._paths.workspace_dir == new_ws.resolve()
+
+
+class TestRunnerDiagnose:
+    """Runner.diagnose() 测试。"""
+
+    def test_diagnose_calls_run_diagnosis(self, workspace_env: dict[str, Path]) -> None:
+        """diagnose() 应将路径、run_id 与筛选器透传给 run_diagnosis。"""
+        config = _make_config(workspace_env, mode="diagnose", run_id="run-123")
+        runner = Runner(config)
+
+        from core.harness.diagnose import DiagnosisResult
+
+        mock_result = DiagnosisResult(run_id="run-123")
+
+        with patch(
+            "core.harness.diagnose.run_diagnosis", return_value=mock_result
+        ) as mock_fn:
+            result = runner.diagnose(task_types=["temporal_reasoning"])
+
+        assert result is mock_result
+        assert mock_fn.call_args.kwargs["run_id"] == "run-123"
+        assert mock_fn.call_args.kwargs["workspace_dir"] == config.workspace_dir
+        assert mock_fn.call_args.kwargs["skills_dir"] == runner._paths.skills_dir
+        assert mock_fn.call_args.kwargs["prompts_dir"] == runner._paths.prompts_dir
+        assert mock_fn.call_args.kwargs["task_types"] == ["temporal_reasoning"]
+
+    def test_diagnose_requires_run_id(self, workspace_env: dict[str, Path]) -> None:
+        """缺少 run_id 时应抛出 ValueError。"""
+        config = _make_config(workspace_env, mode="diagnose", run_id="")
+        runner = Runner(config)
+
+        with pytest.raises(ValueError, match="run_id"):
+            runner.diagnose()

@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from loguru import logger
 
 from core.harness.config import RunConfig
 from core.harness.inference import InferenceResult, run_inference
 from core.harness.question_gen import load_benchmark
 from core.workspace import ResolvedPaths, init_workspace, resolve_paths
+
+if TYPE_CHECKING:
+    from core.harness.diagnose import DiagnosisResult
 
 
 class Runner:
@@ -63,3 +68,23 @@ class Runner:
             max_steps=self._config.max_steps,
             skill_mode=self._config.skill_mode,
         )
+
+    def diagnose(self, run_id: str | None = None, **filters) -> "DiagnosisResult":
+        """执行指定 run 的两阶段诊断。"""
+        effective_run_id = run_id or self._config.run_id
+        if not effective_run_id:
+            raise ValueError("diagnose 模式必须提供 run_id。")
+
+        from core.harness.diagnose import run_diagnosis
+        from core.harness.log import HarnessLog
+
+        with HarnessLog(str(self._paths.db_path), effective_run_id) as log:
+            return run_diagnosis(
+                log=log,
+                run_id=effective_run_id,
+                workspace_dir=self._config.workspace_dir,
+                skills_dir=self._paths.skills_dir,
+                prompts_dir=self._paths.prompts_dir,
+                concurrency=self._config.concurrency,
+                **filters,
+            )

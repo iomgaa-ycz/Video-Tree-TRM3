@@ -1,5 +1,7 @@
 """RunConfig 与 load_config 测试。"""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 import pytest
@@ -15,6 +17,7 @@ def yaml_file(tmp_path: Path) -> Path:
         "workspace_dir": "workspaces/default",
         "store_dir": "store",
         "mode": "infer",
+        "run_id": "",
         "concurrency": 12,
         "max_steps": 15,
         "skill_mode": "auto",
@@ -37,6 +40,7 @@ class TestLoadConfig:
         config = load_config(yaml_file, cli_overrides={})
         assert config.concurrency == 12
         assert config.mode == "infer"
+        assert config.run_id == ""
         assert config.max_steps == 15
         assert config.skill_mode == "auto"
         assert config.n_samples == 0
@@ -91,3 +95,8 @@ class TestRunConfigValidation:
         """concurrency <= 0 应报错。"""
         with pytest.raises(ValueError, match="concurrency"):
             load_config(yaml_file, cli_overrides={"concurrency": 0})
+
+    def test_diagnose_mode_requires_run_id(self, yaml_file: Path) -> None:
+        """diagnose 模式缺少 run_id 应报错。"""
+        with pytest.raises(ValueError, match="run_id"):
+            load_config(yaml_file, cli_overrides={"mode": "diagnose", "run_id": ""})

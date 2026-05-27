@@ -31,7 +31,8 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--workspace-dir", type=Path, dest="workspace_dir")
     parser.add_argument("--store-dir", type=Path, dest="store_dir")
-    parser.add_argument("--mode", choices=["infer", "train"])
+    parser.add_argument("--mode", choices=["infer", "train", "diagnose"])
+    parser.add_argument("--run-id", type=str, dest="run_id")
     parser.add_argument("--concurrency", type=int)
     parser.add_argument("--max-steps", type=int, dest="max_steps")
     parser.add_argument(
@@ -44,6 +45,10 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--skills-version", type=str, dest="skills_version")
     parser.add_argument("--prompts-version", type=str, dest="prompts_version")
     parser.add_argument("--epochs", type=int)
+    parser.add_argument("--task-types", nargs="+", dest="task_types")
+    parser.add_argument("--only-incorrect", action="store_true", dest="only_incorrect")
+    parser.add_argument("--video-ids", nargs="+", dest="video_ids")
+    parser.add_argument("--question-ids", nargs="+", dest="question_ids")
     return parser
 
 
@@ -102,6 +107,13 @@ def main() -> None:
     if config.mode == "infer":
         result = runner.infer()
         _log_result(result)
+    elif config.mode == "diagnose":
+        runner.diagnose(
+            task_types=args.task_types,
+            only_incorrect=args.only_incorrect,
+            video_ids=args.video_ids,
+            question_ids=args.question_ids,
+        )
     elif config.mode == "train":
         logger.error("train 模式尚未实现")
         raise SystemExit(1)

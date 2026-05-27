@@ -6,6 +6,7 @@ workspace_dir: workspaces/default
 store_dir: store
 
 mode: infer
+run_id: ""
 
 concurrency: 12
 max_steps: 15
